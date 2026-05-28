@@ -36,7 +36,7 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0', // Allow network access for mobile testing
-    port: 5173,
+    port: 5200,
     open: true,
   },
 });
