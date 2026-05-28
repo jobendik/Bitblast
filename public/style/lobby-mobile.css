@@ -1,0 +1,146 @@
+/* Mobile Lobby Styles */
+@media screen and (max-width: 1024px) {
+    /* --- LAYOUT OVERRIDES --- */
+
+    /* Header - Compact */
+    #lobby-header {
+        padding: 8px 12px !important;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    #lobby-header h1 {
+        font-size: 2rem !important;
+    }
+
+    /* Reduce tab size */
+    .nav-tab {
+        padding: 4px 12px !important;
+        font-size: 1rem !important;
+    }
+
+    /* Main Layout - Stack vertically */
+    #lobby-main-layout {
+        flex-direction: column !important;
+    }
+
+    /* Left Sidebar - Profile Only */
+    #lobby-sidebar-left {
+        width: 100% !important;
+        padding: 12px !important;
+        background: transparent !important;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        z-index: 20;
+        height: auto !important;
+        pointer-events: none;
+        /* Let clicks pass through to 3D model if needed */
+    }
+
+    #lobby-sidebar-left>div:first-child {
+        /* Profile Card */
+        pointer-events: auto;
+        padding: 12px !important;
+        max-width: 300px;
+    }
+
+    /* Hide detailed stats/quests on mobile to save space */
+    #lobby-sidebar-left>div:last-child {
+        display: none !important;
+    }
+
+    /* Center Stage - Background */
+    #lobby-center-stage {
+        position: absolute !important;
+        inset: 0 !important;
+        z-index: 1 !important;
+    }
+
+    /* Right Sidebar - Bottom Controls */
+    #lobby-sidebar-right {
+        width: 100% !important;
+        padding: 12px !important;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: auto !important;
+        z-index: 30;
+        justify-content: flex-end !important;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent) !important;
+        pointer-events: none;
+    }
+
+    #lobby-sidebar-right>* {
+        pointer-events: auto;
+    }
+
+    /* Hide Notifications & Region on Mobile */
+    /* Hide Notifications on Mobile */
+    #notification-feed {
+        display: none !important;
+    }
+
+    /* Hide Region Display inside controls */
+    #lobby-controls-container>div:last-child {
+        display: none !important;
+    }
+
+    /* Play Button Area Wrapper */
+    #lobby-controls-container {
+        width: 100% !important;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    /* Chat - COMPLETELY HIDDEN ON MOBILE per user request */
+    #lobby-chat {
+        display: none !important;
+    }
+
+    /* Player Name - Simplify */
+    #player-name-container {
+        margin-top: 40px;
+        transform: scale(0.8);
+        background: transparent !important;
+        border: none !important;
+        backdrop-filter: none !important;
+    }
+
+    #player-name-container span {
+        display: none !important;
+    }
+
+    /* Hide Footer */
+    footer {
+        display: none !important;
+    }
+}
+
+/* Extra small screens (Phones) */
+@media screen and (max-width: 600px) {
+    #lobby-header {
+        justify-content: center !important;
+        background: rgba(0, 0, 0, 0.8) !important;
+    }
+
+    #lobby-header>div:first-child {
+        width: auto !important;
+    }
+
+    /* Hide Nav Tabs on ALL mobile screens */
+    #lobby-header nav {
+        display: none !important;
+    }
+
+    #lobby-credits {
+        font-size: 12px !important;
+    }
+
+    /* Profile Card Compact */
+    #lobby-sidebar-left>div:first-child {
+        transform: scale(0.8);
+        transform-origin: top left;
+        margin-left: -10px;
+    }
+}

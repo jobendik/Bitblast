@@ -1,0 +1,151 @@
+/* ============================================
+   KILL STREAK & MULTI-KILL (CASINO STYLE)
+   ============================================ */
+#kill-streak,
+#multi-kill {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 150;
+    white-space: nowrap;
+}
+
+#kill-streak {
+    top: 20%;
+    font-size: 48px;
+    letter-spacing: 8px;
+    /* Base Gold Style */
+    color: #fff;
+    text-shadow:
+        0 0 5px #ffd43b,
+        0 0 10px #ffd43b,
+        0 0 20px #ffd43b,
+        0 0 40px #ff922b,
+        0 0 80px #ff922b;
+}
+
+#multi-kill {
+    top: 28%;
+    font-size: 72px;
+    letter-spacing: 10px;
+    /* Base Red Style */
+    color: #fff;
+    text-shadow:
+        0 0 5px #ff6b6b,
+        0 0 10px #ff6b6b,
+        0 0 20px #ff6b6b,
+        0 0 40px #c92a2a,
+        0 0 80px #c92a2a;
+}
+
+/* Impact Text Animation Classes */
+.impact-text {
+    animation: casinoPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.impact-text.shake {
+    animation: casinoPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+        casinoShake 0.5s ease-in-out;
+}
+
+/* Tiers for increasing intensity */
+.impact-tier-1 {
+    /* Standard Gold */
+    color: #fff;
+    text-shadow:
+        0 0 10px #ffd43b,
+        0 0 20px #ffd43b,
+        0 0 40px #fab005;
+}
+
+.impact-tier-2 {
+    /* Diamond / Cyan */
+    color: #e3fafc;
+    text-shadow:
+        0 0 10px #66d9e8,
+        0 0 20px #3bc9db,
+        0 0 40px #22b8cf,
+        0 0 80px #1098ad;
+    font-size: 1.2em;
+}
+
+.impact-tier-3 {
+    /* Ruby / Red */
+    color: #ffe3e3;
+    text-shadow:
+        0 0 10px #ff8787,
+        0 0 20px #ff6b6b,
+        0 0 40px #fa5252,
+        0 0 80px #e03131;
+    font-size: 1.4em;
+}
+
+.impact-tier-4 {
+    /* JACKPOT / Purple & Gold */
+    color: #fff;
+    text-shadow:
+        0 0 10px #da77f2,
+        0 0 20px #cc5de8,
+        0 0 40px #be4bdb,
+        0 0 80px #ae3ec9,
+        0 0 120px #ffd43b;
+    /* Gold outer glow */
+    font-size: 1.8em;
+    letter-spacing: 15px !important;
+    animation: jackpotPulse 0.2s infinite alternate !important;
+}
+
+@keyframes casinoPop {
+    0% {
+        transform: translateX(-50%) scale(0) rotate(-10deg);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translateX(-50%) scale(1.5) rotate(5deg);
+        opacity: 1;
+    }
+
+    70% {
+        transform: translateX(-50%) scale(0.9) rotate(-2deg);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes casinoShake {
+
+    0%,
+    100% {
+        transform: translateX(-50%) rotate(0deg);
+    }
+
+    25% {
+        transform: translateX(-50%) rotate(-5deg) scale(1.1);
+    }
+
+    75% {
+        transform: translateX(-50%) rotate(5deg) scale(1.1);
+    }
+}
+
+@keyframes jackpotPulse {
+    from {
+        transform: translateX(-50%) scale(1);
+        filter: brightness(100%);
+    }
+
+    to {
+        transform: translateX(-50%) scale(1.1);
+        filter: brightness(150%);
+    }
+}

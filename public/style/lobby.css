@@ -1,0 +1,241 @@
+/* BITBLAST Lobby Styles */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;800&display=swap');
+
+/* --- TYPOGRAPHY --- */
+.font-gaming {
+    font-family: 'Anton', sans-serif;
+    letter-spacing: 0.05em;
+}
+.font-ui {
+    font-family: 'Inter', sans-serif;
+}
+
+/* --- TRANSFORMS & EFFECTS --- */
+.skew-tab {
+    transform: skewX(-15deg);
+}
+.skew-tab-content {
+    transform: skewX(15deg);
+}
+.glow-text {
+    text-shadow: 0 0 15px rgba(6, 182, 212, 0.8);
+}
+.glow-gold {
+    text-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+}
+.glow-platform {
+    box-shadow: 0 0 60px 30px rgba(6, 182, 212, 0.25);
+}
+
+/* --- ANIMATIONS --- */
+@keyframes shine {
+    0% { transform: translateX(-150%) skewX(-12deg); }
+    100% { transform: translateX(250%) skewX(-12deg); }
+}
+.animate-shine {
+    animation: shine 1.5s infinite;
+}
+
+@keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.3); opacity: 0; }
+}
+.ring-pulse::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: inherit;
+    border: 2px solid currentColor;
+    animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* --- SCROLLBAR --- */
+#lobby-screen ::-webkit-scrollbar { width: 6px; }
+#lobby-screen ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+#lobby-screen ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+/* --- SCANLINES & BG --- */
+.scanlines {
+    background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.15) 50%,
+        rgba(0,0,0,0.15)
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+}
+
+/* --- PARTICLES --- */
+.lobby-particle {
+    position: absolute;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.8) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particleFloat 8s infinite;
+}
+
+@keyframes particleFloat {
+    0% { transform: translate(0, 0) scale(1); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.6; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* Mode Card Hover */
+.mode-card:hover {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    border-color: #facc15;
+}
+
+/* Chat Messages */
+.chat-message {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Battle Pass Tier */
+.bp-tier {
+    transition: all 0.3s ease;
+}
+.bp-tier:hover {
+    transform: scale(1.05);
+}
+
+/* Voice Indicator */
+@keyframes voicePulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.3); opacity: 1; }
+}
+
+.voice-active {
+    animation: voicePulse 0.5s infinite;
+}
+
+/* Lobby Screen Container */
+#lobby-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    font-family: 'Inter', sans-serif;
+}
+
+#lobby-screen.hidden {
+    display: none;
+}
+
+/* Tailwind-like utility classes for lobby */
+.lobby-bg-slate-900 { background-color: #0f172a; }
+.lobby-text-white { color: white; }
+.lobby-overflow-hidden { overflow: hidden; }
+.lobby-h-screen { height: 100vh; }
+.lobby-w-screen { width: 100vw; }
+.lobby-select-none { user-select: none; }
+
+/* ========== Chat Messages ========== */
+#chat-messages .chat-message {
+    animation: chatSlideIn 0.3s ease-out;
+}
+
+@keyframes chatSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#lobby-chat::-webkit-scrollbar {
+    width: 4px;
+}
+
+#lobby-chat::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+#lobby-chat::-webkit-scrollbar-thumb {
+    background: rgba(34, 211, 238, 0.3);
+    border-radius: 2px;
+}
+
+/* ========== Notification Feed ========== */
+#notification-feed > div {
+    animation: notifSlideIn 0.3s ease-out;
+}
+
+@keyframes notifSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ========== Player Slots ========== */
+#player-slots .player-slot {
+    transition: all 0.3s ease;
+}
+
+#player-slots .player-slot.filled {
+    animation: slotPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes slotPulse {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+    }
+}
+
+/* ========== Username Input ========== */
+#player-name-container:hover {
+    border-color: rgba(250, 204, 21, 0.4);
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.2);
+}
+
+#player-name-input:focus {
+    border-color: #22d3ee;
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.3);
+}
+
+/* ========== Countdown Ring Animation ========== */
+#countdown-ring rect {
+    transition: stroke-dashoffset 1s linear;
+}
+
+/* ========== Enhanced PLAY Button ========== */
+#readyBtn.searching {
+    animation: searchPulse 2s ease-in-out infinite;
+}
+
+@keyframes searchPulse {
+    0%, 100% {
+        box-shadow: 0 0 25px rgba(220, 38, 38, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(220, 38, 38, 0.7);
+    }
+}

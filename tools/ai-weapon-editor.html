@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Weapon Placement Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(30, 30, 50, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            width: 320px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #7dd3fc;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            margin: 15px 0 10px 0;
+            color: #a5b4fc;
+            font-size: 14px;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #334155;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #7dd3fc;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #1e293b;
+            color: #fff;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        select:hover {
+            border-color: #7dd3fc;
+        }
+
+        .value-display {
+            min-width: 80px;
+            text-align: right;
+            font-family: monospace;
+            font-size: 11px;
+            color: #fbbf24;
+        }
+
+        #output {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 10px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: 15px;
+            border: 1px solid #334155;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 8px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button.secondary {
+            background: #475569;
+        }
+
+        button.secondary:hover {
+            background: #64748b;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .toolbar button {
+            flex: 1;
+            margin: 0;
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .toolbar button.active {
+            background: #22c55e;
+        }
+
+        .target-buttons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .target-buttons button {
+            flex: 1;
+            margin: 0;
+            padding: 10px 8px;
+            font-size: 11px;
+        }
+
+        .target-buttons button.active-weapon {
+            background: #f59e0b;
+            color: #000;
+        }
+
+        .target-buttons button.active-muzzle {
+            background: #ef4444;
+        }
+
+        #instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(30, 30, 50, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+            max-width: 280px;
+        }
+
+        #instructions strong {
+            color: #7dd3fc;
+        }
+
+        #instructions kbd {
+            background: #334155;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #fbbf24;
+        }
+
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 30, 50, 0.95);
+            padding: 30px 50px;
+            border-radius: 12px;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        #loading.hidden {
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #334155;
+            border-top-color: #7dd3fc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .info-label {
+            color: #94a3b8;
+        }
+
+        .info-value {
+            color: #fbbf24;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvas-container"></div>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading models...</div>
+    </div>
+
+    <div id="controls">
+        <h2>🔧 AI Weapon Placement Editor</h2>
+
+        <h3>🎯 Select What to Move</h3>
+        <div class="target-buttons">
+            <button id="selectWeapon" class="active-weapon" onclick="selectTarget('weapon')">🔫 Weapon</button>
+            <button id="selectMuzzle" onclick="selectTarget('muzzle')">💥 Muzzle</button>
+        </div>
+
+        <h3>🕹️ Gizmo Mode</h3>
+        <div class="toolbar">
+            <button id="modeTranslate" class="active" onclick="setGizmoMode('translate')">↔️ Move</button>
+            <button id="modeRotate" onclick="setGizmoMode('rotate')">🔄 Rotate</button>
+            <button id="modeScale" onclick="setGizmoMode('scale')">📏 Scale</button>
+        </div>
+
+        <h3>🔫 Weapon</h3>
+        <div class="control-group">
+            <select id="weaponSelect">
+                <option value="machinegun">AK47 (machinegun)</option>
+                <option value="pistol">Pistol</option>
+                <option value="pistolSilencer">Scar (pistolSilencer)</option>
+                <option value="shotgun">Shotgun</option>
+                <option value="sniper">Sniper</option>
+                <option value="sniperCamo">AWP (sniperCamo)</option>
+                <option value="uzi">Tec9 (uzi)</option>
+                <option value="machinegunLauncher">LMG (machinegunLauncher)</option>
+            </select>
+        </div>
+
+        <h3>📊 Current Values</h3>
+        <div id="valuesDisplay">
+            <div style="font-weight: bold; color: #f59e0b; margin-bottom: 6px;">Weapon:</div>
+            <div class="info-row"><span class="info-label">Position</span><span class="info-value" id="weaponPos">(6.3,
+                    13.8, 1.3)</span></div>
+            <div class="info-row"><span class="info-label">Rotation</span><span class="info-value"
+                    id="weaponRot">(-102°, 7°, -93°)</span></div>
+            <div class="info-row"><span class="info-label">Scale Comp</span><span class="info-value"
+                    id="weaponScale">720</span></div>
+
+            <div style="font-weight: bold; color: #ef4444; margin: 10px 0 6px;">Muzzle Offset:</div>
+            <div class="info-row"><span class="info-label">Position</span><span class="info-value"
+                    id="muzzlePos">(0.007, 0.000, 0.000)</span></div>
+        </div>
+
+        <h3>📏 Scale Compensation</h3>
+        <div class="control-group">
+            <div class="slider-row">
+                <input type="range" id="scaleSlider" min="10" max="1500" value="720" step="10">
+                <span class="value-display" id="scaleVal">720</span>
+            </div>
+        </div>
+
+        <button onclick="copyCode()">📋 Copy Code to Clipboard</button>
+        <button class="secondary" onclick="resetValues()">↺ Reset to Defaults</button>
+
+        <div id="output">// Code will appear here</div>
+    </div>
+
+    <div id="instructions">
+        <strong>🎮 Gizmo Controls:</strong><br>
+        • Drag the <span style="color:#ef4444">red</span>/<span style="color:#22c55e">green</span>/<span
+            style="color:#3b82f6">blue</span> arrows to move<br>
+        • Click empty space to deselect<br>
+        <br>
+        <strong>⌨️ Keyboard Shortcuts:</strong><br>
+        • <kbd>W</kbd> Move mode<br>
+        • <kbd>E</kbd> Rotate mode<br>
+        • <kbd>R</kbd> Scale mode<br>
+        • <kbd>1</kbd> Select Weapon<br>
+        • <kbd>2</kbd> Select Muzzle<br>
+        <br>
+        <strong>🖱️ Camera:</strong><br>
+        • Left-drag: Orbit<br>
+        • Right-drag: Pan<br>
+        • Scroll: Zoom
+    </div>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { TransformControls } from 'three/addons/controls/TransformControls.js';
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+        import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+
+        // Scene setup
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(2, 1.5, 3); // Better initial view of the character
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // Orbit controls for camera
+        const orbitControls = new OrbitControls(camera, renderer.domElement);
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.05;
+        orbitControls.target.set(0, 1.2, 0); // Target improved for character height
+
+        // Transform controls (gizmos)
+        const transformControls = new TransformControls(camera, renderer.domElement);
+        scene.add(transformControls);
+
+        // Disable orbit controls when using transform controls
+        transformControls.addEventListener('dragging-changed', (event) => {
+            orbitControls.enabled = !event.value;
+        });
+
+        // Update values when gizmo moves things
+        transformControls.addEventListener('change', () => {
+            updateValuesDisplay();
+            updateOutput();
+        });
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const fillLight = new THREE.DirectionalLight(0x8888ff, 0.8);
+        fillLight.position.set(-5, 5, -5);
+        scene.add(fillLight);
+
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(10, 20, 0x444444, 0x333333);
+        scene.add(gridHelper);
+
+        // State
+        let characterGroup = null;
+        let handBone = null;
+        let weapon = null;
+        let muzzleMarker = null;
+        let mixer = null;
+        let currentTarget = 'weapon'; // 'weapon' or 'muzzle'
+        const clock = new THREE.Clock();
+
+        // Weapon models cache
+        const weaponModels = new Map();
+
+        // Paths
+        const WEAPON_BASE_PATH = '../public/assets/models/weapons/weaponpack/Models/';
+        const CHARACTER_PATH = '../public/assets/models/characters/Amy/amy_idle.fbx';
+        const CHARACTER_SCALE = 0.02;
+
+        // Weapon configs
+        const WEAPON_CONFIGS = {
+            machinegun: { baseScale: 1.0, name: 'AK47' },
+            pistol: { baseScale: 1.0, name: 'Pistol' },
+            pistolSilencer: { baseScale: 1.0, name: 'Scar' },
+            shotgun: { baseScale: 1.0, name: 'Shotgun' },
+            sniper: { baseScale: 1.0, name: 'Sniper' },
+            sniperCamo: { baseScale: 1.0, name: 'AWP' },
+            uzi: { baseScale: 1.0, name: 'Tec9' },
+            machinegunLauncher: { baseScale: 1.0, name: 'LMG' }
+        };
+
+        // Default values - UPDATED to match current production logic
+        const defaults = {
+            weaponPos: new THREE.Vector3(6.3, 13.8, 1.3),
+            weaponRot: new THREE.Euler(-0.569 * Math.PI, 0.040 * Math.PI, -0.514 * Math.PI),
+            scale: 720,
+            muzzleOffset: new THREE.Vector3(0.007, 0.000, 0.000)
+        };
+
+        // Load weapon OBJ
+        async function loadWeaponOBJ(modelName) {
+            if (weaponModels.has(modelName)) {
+                return weaponModels.get(modelName).clone();
+            }
+
+            const mtlLoader = new MTLLoader();
+            const objLoader = new OBJLoader();
+
+            return new Promise((resolve, reject) => {
+                mtlLoader.load(
+                    WEAPON_BASE_PATH + modelName + '.mtl',
+                    (materials) => {
+                        materials.preload();
+                        objLoader.setMaterials(materials);
+
+                        objLoader.load(
+                            WEAPON_BASE_PATH + modelName + '.obj',
+                            (obj) => {
+                                obj.traverse((child) => {
+                                    if (child.isMesh) {
+                                        child.castShadow = true;
+                                        child.receiveShadow = true;
+                                        if (child.material) {
+                                            if (Array.isArray(child.material)) {
+                                                child.material.forEach(m => { m.side = THREE.DoubleSide; });
+                                            } else {
+                                                child.material.side = THREE.DoubleSide;
+                                            }
+                                        }
+                                    }
+                                });
+                                obj.userData.isOBJModel = true;
+                                weaponModels.set(modelName, obj);
+                                resolve(obj.clone());
+                            },
+                            undefined,
+                            reject
+                        );
+                    },
+                    undefined,
+                    () => {
+                        // No MTL, load OBJ only
+                        objLoader.load(
+                            WEAPON_BASE_PATH + modelName + '.obj',
+                            (obj) => {
+                                obj.traverse((child) => {
+                                    if (child.isMesh) {
+                                        child.material = new THREE.MeshStandardMaterial({
+                                            color: 0x333333, metalness: 0.8, roughness: 0.3
+                                        });
+                                    }
+                                });
+                                obj.userData.isOBJModel = true;
+                                weaponModels.set(modelName, obj);
+                                resolve(obj.clone());
+                            },
+                            undefined,
+                            reject
+                        );
+                    }
+                );
+            });
+        }
+
+        // Load character (Bot/Remote Player Model)
+        async function loadCharacter() {
+            const fbxLoader = new FBXLoader();
+
+            return new Promise((resolve, reject) => {
+                fbxLoader.load(
+                    CHARACTER_PATH,
+                    (fbx) => {
+                        fbx.scale.setScalar(CHARACTER_SCALE);
+
+                        fbx.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+
+                        // Find hand bone - Using mixamorigRightHand same as RemoteBot
+                        let foundHand = null;
+                        fbx.traverse((child) => {
+                            if (child.isBone) {
+                                const boneName = child.name.toLowerCase();
+                                if (boneName.includes('righthand') &&
+                                    !boneName.includes('thumb') && !boneName.includes('index') &&
+                                    !boneName.includes('middle') && !boneName.includes('ring') &&
+                                    !boneName.includes('pinky')) {
+                                    foundHand = child;
+                                }
+                            }
+                        });
+
+                        // Fallback
+                        if (!foundHand) {
+                            fbx.traverse((child) => {
+                                if (child.isBone && (child.name.includes('RightHand') || child.name.includes('mixamorigRightHand'))) {
+                                    foundHand = child;
+                                }
+                            });
+                        }
+
+                        // Animation - freeze at proper aiming frame
+                        if (fbx.animations && fbx.animations.length > 0) {
+                            mixer = new THREE.AnimationMixer(fbx);
+                            const action = mixer.clipAction(fbx.animations[0]);
+                            action.play();
+                            action.paused = true; // Freeze for editing
+
+                            // Advance to a frame where the arm is up/aiming if possible, roughly 0.5s in
+                            mixer.update(0.5);
+                        }
+
+                        scene.add(fbx);
+                        characterGroup = fbx;
+                        handBone = foundHand;
+
+                        // Hand marker for visualization
+                        if (handBone) {
+                            const axesHelper = new THREE.AxesHelper(0.2);
+                            handBone.add(axesHelper);
+                        } else {
+                            console.error("Right hand bone not found!");
+                        }
+
+                        resolve(fbx);
+                    },
+                    undefined,
+                    reject
+                );
+            });
+        }
+
+        // Create muzzle marker
+        function createMuzzleMarker() {
+            // Create a visible muzzle point that can be grabbed
+            const geometry = new THREE.SphereGeometry(0.015);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xef4444,
+                emissive: 0xef4444,
+                emissiveIntensity: 1
+            });
+
+            muzzleMarker = new THREE.Mesh(geometry, material);
+            muzzleMarker.name = 'muzzleMarker';
+
+            // Add a small cone pointing forward to show direction
+            const coneGeometry = new THREE.ConeGeometry(0.008, 0.03, 8);
+            const coneMaterial = new THREE.MeshStandardMaterial({
+                color: 0xff6666,
+                emissive: 0xff6666,
+                emissiveIntensity: 0.5
+            });
+            const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+            cone.rotation.x = Math.PI / 2; // Point forward Z is usually forward for muzzle
+            cone.position.z = 0.02;
+            muzzleMarker.add(cone);
+
+            return muzzleMarker;
+        }
+
+        // Switch weapon
+        async function switchWeapon(modelName) {
+            // Remove old weapon
+            if (weapon && handBone) {
+                handBone.remove(weapon);
+            }
+
+            try {
+                weapon = await loadWeaponOBJ(modelName);
+
+                if (handBone && weapon) {
+                    handBone.add(weapon);
+
+                    // Apply transforms
+                    // Base scaling logic mimics PlayerWeaponSystem logic sort of
+                    // But here we rely mostly on the user slider to set the final 'scale' const
+                    const sliderVal = parseFloat(document.getElementById('scaleSlider').value);
+
+                    weapon.position.copy(defaults.weaponPos);
+                    weapon.rotation.copy(defaults.weaponRot);
+                    weapon.scale.setScalar(sliderVal);
+
+                    // Create and position muzzle marker
+                    muzzleMarker = createMuzzleMarker();
+                    weapon.add(muzzleMarker);
+                    muzzleMarker.position.copy(defaults.muzzleOffset);
+
+                    // Select weapon by default
+                    selectTarget('weapon');
+                    updateValuesDisplay();
+                    updateOutput();
+                }
+            } catch (error) {
+                console.error('Error switching weapon:', error);
+            }
+        }
+
+        // Select target for gizmo
+        window.selectTarget = function (target) {
+            currentTarget = target;
+
+            // Update button styles
+            document.getElementById('selectWeapon').className = target === 'weapon' ? 'active-weapon' : '';
+            document.getElementById('selectMuzzle').className = target === 'muzzle' ? 'active-muzzle' : '';
+
+            // Attach gizmo to correct object
+            if (target === 'weapon' && weapon) {
+                transformControls.attach(weapon);
+            } else if (target === 'muzzle' && muzzleMarker) {
+                transformControls.attach(muzzleMarker);
+            }
+        };
+
+        // Set gizmo mode
+        window.setGizmoMode = function (mode) {
+            transformControls.setMode(mode);
+
+            // Update button styles
+            document.getElementById('modeTranslate').className = mode === 'translate' ? 'active' : '';
+            document.getElementById('modeRotate').className = mode === 'rotate' ? 'active' : '';
+            document.getElementById('modeScale').className = mode === 'scale' ? 'active' : '';
+        };
+
+        // Update values display
+        function updateValuesDisplay() {
+            if (!weapon) return;
+
+            const pos = weapon.position;
+            const rot = weapon.rotation;
+            const scaleVal = document.getElementById('scaleSlider').value;
+
+            document.getElementById('weaponPos').textContent =
+                `(${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`;
+            document.getElementById('weaponRot').textContent =
+                `(${(rot.x * 180 / Math.PI).toFixed(1)}°, ${(rot.y * 180 / Math.PI).toFixed(1)}°, ${(rot.z * 180 / Math.PI).toFixed(1)}°)`;
+            document.getElementById('weaponScale').textContent = scaleVal;
+
+            if (muzzleMarker) {
+                const mPos = muzzleMarker.position;
+                document.getElementById('muzzlePos').textContent =
+                    `(${mPos.x.toFixed(3)}, ${mPos.y.toFixed(3)}, ${mPos.z.toFixed(3)})`;
+            }
+        }
+
+        // Update code output
+        function updateOutput() {
+            if (!weapon) return;
+
+            const pos = weapon.position;
+            const rot = weapon.rotation;
+            const scaleVal = document.getElementById('scaleSlider').value;
+
+            const rotXDeg = (rot.x * 180 / Math.PI).toFixed(1);
+            const rotYDeg = (rot.y * 180 / Math.PI).toFixed(1);
+            const rotZDeg = (rot.z * 180 / Math.PI).toFixed(1);
+
+            let muzzleCode = '';
+            if (muzzleMarker) {
+                const mPos = muzzleMarker.position;
+                muzzleCode = `
+      // Muzzle Flash Offset
+      this.muzzleFlash.position.set(${mPos.x.toFixed(3)}, ${mPos.y.toFixed(3)}, ${mPos.z.toFixed(3)});`;
+            }
+
+            const code = `// ═══ AI / Third Person Weapon Settings ═══
+// Copy to PlayerWeaponSystem.ts setThirdPersonMode()
+
+// Position
+this.weaponMesh.position.set(${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)});
+
+// Rotation: X=${rotXDeg}°, Y=${rotYDeg}°, Z=${rotZDeg}°
+this.weaponMesh.rotation.set(
+  ${(rot.x / Math.PI).toFixed(3)} * Math.PI,
+  ${(rot.y / Math.PI).toFixed(3)} * Math.PI,
+  ${(rot.z / Math.PI).toFixed(3)} * Math.PI
+);
+
+// Scale Compensation
+const scale = ${scaleVal};
+this.weaponMesh.scale.set(scale, scale, scale);
+${muzzleCode}`;
+
+            document.getElementById('output').textContent = code;
+        }
+
+        // Copy code
+        window.copyCode = function () {
+            const code = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.target;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => btn.textContent = '📋 Copy Code to Clipboard', 1500);
+            });
+        };
+
+        // Reset values
+        window.resetValues = function () {
+            if (weapon) {
+                const config = WEAPON_CONFIGS[document.getElementById('weaponSelect').value] || { baseScale: 1.0 };
+                const scale = defaults.scale;
+
+                weapon.position.copy(defaults.weaponPos);
+                weapon.rotation.copy(defaults.weaponRot);
+                weapon.scale.setScalar(scale);
+
+                document.getElementById('scaleSlider').value = defaults.scale;
+                document.getElementById('scaleVal').textContent = defaults.scale;
+
+                if (muzzleMarker) {
+                    muzzleMarker.position.copy(defaults.muzzleOffset);
+                }
+            }
+
+            updateValuesDisplay();
+            updateOutput();
+        };
+
+        // Scale slider
+        document.getElementById('scaleSlider').addEventListener('input', (e) => {
+            const scaleVal = parseFloat(e.target.value);
+            document.getElementById('scaleVal').textContent = scaleVal;
+
+            if (weapon) {
+                weapon.scale.setScalar(scaleVal);
+            }
+
+            updateValuesDisplay();
+            updateOutput();
+        });
+
+        // Weapon selector
+        document.getElementById('weaponSelect').addEventListener('change', (e) => {
+            switchWeapon(e.target.value);
+        });
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            switch (e.key.toLowerCase()) {
+                case 'w': setGizmoMode('translate'); break;
+                case 'e': setGizmoMode('rotate'); break;
+                case 'r': setGizmoMode('scale'); break;
+                case '1': selectTarget('weapon'); break;
+                case '2': selectTarget('muzzle'); break;
+            }
+        });
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize
+        async function init() {
+            try {
+                await loadCharacter();
+                await switchWeapon('machinegun');
+
+                document.getElementById('loading').classList.add('hidden');
+                updateValuesDisplay();
+                updateOutput();
+
+                // Loop
+                renderer.setAnimationLoop(() => {
+                    orbitControls.update();
+                    renderer.render(scene, camera);
+                });
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                document.getElementById('loading').innerHTML = `
+          <div style="color: #ef4444;">❌ Error loading models</div>
+          <div style="margin-top: 10px; font-size: 12px;">Check console for details</div>
+        `;
+            }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

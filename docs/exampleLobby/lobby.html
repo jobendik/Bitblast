@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BITBLAST - Battle Lobby</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;800&display=swap');
+
+        /* --- TYPOGRAPHY --- */
+        .font-gaming {
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 0.05em;
+        }
+        .font-ui {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* --- TRANSFORMS & EFFECTS --- */
+        .skew-tab {
+            transform: skewX(-15deg);
+        }
+        .skew-tab-content {
+            transform: skewX(15deg);
+        }
+        .glow-text {
+            text-shadow: 0 0 15px rgba(6, 182, 212, 0.8);
+        }
+        .glow-gold {
+            text-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+        }
+        .glow-platform {
+            box-shadow: 0 0 60px 30px rgba(6, 182, 212, 0.25);
+        }
+        
+        /* --- ANIMATIONS --- */
+        @keyframes shine {
+            0% { transform: translateX(-150%) skewX(-12deg); }
+            100% { transform: translateX(250%) skewX(-12deg); }
+        }
+        .animate-shine {
+            animation: shine 1.5s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .ring-pulse::before {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border-radius: inherit;
+            border: 2px solid currentColor;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* --- SCROLLBAR --- */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+        /* --- SCANLINES & BG --- */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.15) 50%,
+                rgba(0,0,0,0.15)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* --- PARTICLES --- */
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.8) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFloat 8s infinite;
+        }
+
+        @keyframes particleFloat {
+            0% { transform: translate(0, 0) scale(1); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+        /* Mode Card Hover */
+        .mode-card:hover {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            border-color: #facc15;
+        }
+
+        /* Chat Messages */
+        .chat-message {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Battle Pass Tier */
+        .bp-tier {
+            transition: all 0.3s ease;
+        }
+        .bp-tier:hover {
+            transform: scale(1.05);
+        }
+
+        /* Quick Chat Wheel */
+        .chat-wheel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            pointer-events: none;
+        }
+
+        .chat-wheel-item {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            pointer-events: auto;
+        }
+
+        .chat-wheel-item:hover {
+            background: rgba(6, 182, 212, 0.8);
+            border-color: #22d3ee;
+            transform: scale(1.2);
+        }
+
+        /* Store Item */
+        .store-item {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .store-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .store-item:hover::before {
+            left: 100%;
+        }
+
+        /* Notification */
+        .notification {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            backdrop-filter: blur(20px);
+        }
+
+        /* Voice Indicator */
+        @keyframes voicePulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        .voice-active {
+            animation: voicePulse 0.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white overflow-hidden h-screen w-screen select-none font-ui relative">
+
+    <!-- Background Layers -->
+    <div class="absolute inset-0 z-0">
+        <img src="background.png" class="w-full h-full object-cover" alt="Background">
+        <div class="absolute inset-0 bg-gradient-to-b from-blue-900/30 via-transparent to-black/80"></div>
+    </div>
+    <div class="absolute inset-0 z-0 scanlines opacity-10"></div>
+    
+    <!-- Particle Container -->
+    <div id="particles" class="absolute inset-0 z-0 overflow-hidden pointer-events-none"></div>
+
+    <!-- App Container -->
+    <div class="relative z-10 flex flex-col h-full transition-all duration-500" id="app-container">
+
+        <!-- TOP NAVIGATION -->
+        <header class="flex items-center justify-between px-6 py-3 bg-gradient-to-b from-black/80 to-transparent border-b border-white/5 backdrop-blur-sm z-50">
+            <!-- Logo -->
+            <div class="flex items-center space-x-4 w-1/4">
+                <h1 class="font-gaming text-5xl text-white italic tracking-wider drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400">BITBLAST</h1>
+                <span class="hidden lg:block text-[10px] bg-yellow-400 text-black font-black px-2 py-0.5 rounded transform -skew-x-12 tracking-widest">SEASON 1</span>
+            </div>
+
+            <!-- Tabs -->
+            <nav class="hidden md:flex flex-1 justify-center space-x-2">
+                <button onclick="switchTab('lobby')" id="tab-lobby" class="nav-tab group relative px-6 py-1 hover:bg-white/5 transition-all skew-tab uppercase font-gaming text-2xl text-yellow-400 border-b-4 border-yellow-400">
+                    <span class="block skew-tab-content drop-shadow-md">Lobby</span>
+                </button>
+                <button onclick="switchTab('bp')" id="tab-bp" class="nav-tab group relative px-6 py-1 hover:bg-white/5 transition-all skew-tab uppercase font-gaming text-2xl text-gray-400 hover:text-white border-b-4 border-transparent hover:border-white/20">
+                    <span class="block skew-tab-content">Battle Pass</span>
+                </button>
+                <button onclick="switchTab('leaderboard')" id="tab-leaderboard" class="nav-tab group relative px-6 py-1 hover:bg-white/5 transition-all skew-tab uppercase font-gaming text-2xl text-gray-400 hover:text-white border-b-4 border-transparent hover:border-white/20">
+                    <span class="block skew-tab-content">Leaderboards</span>
+                </button>
+                <button onclick="switchTab('store')" id="tab-store" class="nav-tab group relative px-6 py-1 hover:bg-white/5 transition-all skew-tab uppercase font-gaming text-2xl text-gray-400 hover:text-white border-b-4 border-transparent hover:border-white/20">
+                    <span class="block skew-tab-content">Store</span>
+                </button>
+                <button onclick="switchTab('loadout')" id="tab-loadout" class="nav-tab group relative px-6 py-1 hover:bg-white/5 transition-all skew-tab uppercase font-gaming text-2xl text-gray-400 hover:text-white border-b-4 border-transparent hover:border-white/20">
+                    <span class="block skew-tab-content">Loadout</span>
+                </button>
+            </nav>
+
+            <!-- User Meta -->
+            <div class="flex items-center justify-end space-x-4 w-1/4">
+                <div class="flex items-center space-x-2 bg-black/60 px-4 py-1.5 rounded-full border border-white/10 hover:border-cyan-500/50 transition cursor-pointer group" onclick="openStore()">
+                    <div class="w-4 h-4 bg-cyan-400 rounded-full shadow-[0_0_10px_#22d3ee]"></div>
+                    <span id="credits" class="font-bold text-sm tracking-wide group-hover:text-cyan-400 transition">1,250 CR</span>
+                </div>
+                <button onclick="openNotifications()" class="relative p-2 hover:bg-white/10 rounded transition" title="Notifications">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <span id="notif-badge" class="hidden absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full"></span>
+                </button>
+                <button onclick="openSettings()" class="p-2 hover:bg-white/10 rounded transition" title="Settings">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+            
+            <!-- LEFT SIDEBAR -->
+            <aside class="hidden md:flex w-1/4 lg:w-1/6 p-6 flex-col space-y-6 z-20 bg-gradient-to-r from-black/60 via-black/20 to-transparent">
+                <!-- Profile / Season Badge -->
+                <div class="bg-gradient-to-br from-indigo-900/80 to-black/80 backdrop-blur border border-indigo-500/30 p-5 rounded-xl shadow-2xl relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500 blur-3xl opacity-20 group-hover:opacity-40 transition duration-700"></div>
+                    
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="relative w-14 h-14 flex items-center justify-center bg-black/40 rounded-lg border border-white/10">
+                            <svg class="w-10 h-10 text-yellow-400 drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span id="bp-tier-badge" class="absolute text-black font-black text-lg">1</span>
+                        </div>
+                        <div>
+                            <h2 id="bp-status" class="font-gaming text-2xl text-white leading-none">FREE PASS</h2>
+                            <p class="text-[10px] text-indigo-300 font-bold tracking-widest uppercase mt-1">Tier 1 • New Recruit</p>
+                        </div>
+                    </div>
+                    <!-- XP Bar -->
+                    <div class="w-full bg-black/60 h-2.5 rounded-full overflow-hidden border border-white/5">
+                        <div id="xp-bar" class="bg-gradient-to-r from-yellow-300 to-yellow-600 h-full w-[15%] shadow-[0_0_15px_rgba(234,179,8,0.8)] relative transition-all duration-500">
+                             <div class="absolute right-0 top-0 bottom-0 w-1 bg-white/50"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-[10px] mt-1.5 font-bold text-gray-400 uppercase tracking-wider">
+                        <span id="level-display">Lvl 1</span>
+                        <span id="xp-display">150 / 1000 XP</span>
+                    </div>
+                </div>
+
+                <!-- Daily Quests -->
+                <div class="flex-1 overflow-y-auto pr-2 custom-scroll">
+                    <h3 class="font-gaming text-xl mb-4 text-white/90 border-b border-white/10 pb-2 flex justify-between items-center">
+                        DAILY OPS 
+                        <span class="text-xs font-ui font-normal text-gray-400 bg-white/5 px-2 py-0.5 rounded">Reset: 14h</span>
+                    </h3>
+                    <div id="quest-list" class="space-y-3">
+                        <!-- Quests populated by JS -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- CENTER STAGE (Dynamic Content) -->
+            <section id="main-stage" class="w-full md:w-2/4 lg:w-2/3 relative flex items-center justify-center perspective-1000">
+                
+                <!-- Lobby View (Character) -->
+                <div id="view-lobby" class="w-full h-full flex flex-col items-center justify-center relative transition-opacity duration-300">
+                    <!-- Platform Glow -->
+                    <div class="absolute bottom-[10%] w-[60%] h-16 bg-cyan-500/10 rounded-[100%] blur-2xl glow-platform animate-pulse pointer-events-none"></div>
+
+                    <!-- 3D Character Container -->
+                    <div id="canvas-container" class="w-full h-full absolute inset-0 z-10 flex items-center justify-center">
+                        <div id="loading-text" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 font-gaming text-2xl text-cyan-400 animate-pulse hidden">
+                            LOADING ASSETS... 0%
+                        </div>
+                    </div>
+
+                    <!-- Player Name UI Layer -->
+                    <div class="absolute top-5 z-20 w-full flex justify-center pointer-events-none">
+                        <div class="mb-6 text-center transform transition-transform pointer-events-auto group">
+                            <div class="bg-black/40 backdrop-blur-md px-4 py-1.5 rounded-lg border border-white/10 flex flex-col items-center shadow-lg">
+                                <div class="flex items-center gap-2">
+                                    <div id="voice-indicator" class="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981] hidden"></div>
+                                    <h2 id="player-name" class="font-gaming text-3xl text-white tracking-widest drop-shadow-lg">GUEST_9021</h2>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-yellow-400 text-[10px] font-bold tracking-[0.2em] uppercase">Squad Leader</span>
+                                    <button onclick="saveProfile()" class="text-[10px] text-cyan-400 hover:text-white underline decoration-dashed underline-offset-2">SAVE PROGRESS</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Squad Invite Slots -->
+                    <div class="absolute w-full h-full pointer-events-none z-20" id="squad-slots">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Battle Pass View -->
+                <div id="view-bp" class="hidden w-full h-full flex-col p-10 overflow-y-auto">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="flex justify-between items-center mb-8">
+                            <div>
+                                <h2 class="font-gaming text-5xl text-white glow-text tracking-wider">SEASON 1 PASS</h2>
+                                <p class="text-gray-400 mt-2">Unlock exclusive rewards as you play</p>
+                            </div>
+                            <button onclick="upgradeBattlePass()" class="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-8 py-3 rounded-lg font-gaming text-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+                                UPGRADE - 950 CR
+                            </button>
+                        </div>
+                        
+                        <div id="bp-tiers" class="grid grid-cols-5 gap-4">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard View -->
+                <div id="view-leaderboard" class="hidden w-full h-full flex-col items-center justify-start pt-10 px-10 relative overflow-y-auto">
+                    <h2 class="font-gaming text-5xl text-white mb-8 glow-text tracking-wider">GLOBAL RANKING</h2>
+                    <div class="w-full max-w-3xl bg-black/60 backdrop-blur-xl rounded-xl border border-white/10 overflow-hidden">
+                        <div class="flex bg-white/5 p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            <div class="w-16 text-center">Rank</div>
+                            <div class="flex-1">Player</div>
+                            <div class="w-32 text-center">Wins</div>
+                            <div class="w-32 text-center">K/D</div>
+                        </div>
+                        <div id="leaderboard-list" class="divide-y divide-white/5">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Store View -->
+                <div id="view-store" class="hidden w-full h-full flex-col p-10 overflow-y-auto">
+                    <div class="max-w-6xl mx-auto">
+                        <h2 class="font-gaming text-5xl text-white mb-8 glow-text tracking-wider">ITEM SHOP</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="store-items">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loadout View -->
+                <div id="view-loadout" class="hidden w-full h-full flex-col p-10 overflow-y-auto">
+                    <div class="max-w-6xl mx-auto">
+                        <h2 class="font-gaming text-5xl text-white mb-8 glow-text tracking-wider">LOADOUT</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Primary Weapon -->
+                            <div class="bg-black/60 backdrop-blur border border-white/10 rounded-xl p-6">
+                                <h3 class="font-gaming text-2xl text-cyan-400 mb-4">PRIMARY WEAPON</h3>
+                                <div id="primary-weapon" class="space-y-3">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                            <!-- Secondary Weapon -->
+                            <div class="bg-black/60 backdrop-blur border border-white/10 rounded-xl p-6">
+                                <h3 class="font-gaming text-2xl text-cyan-400 mb-4">SECONDARY WEAPON</h3>
+                                <div id="secondary-weapon" class="space-y-3">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                            <!-- Skin Selection -->
+                            <div class="bg-black/60 backdrop-blur border border-white/10 rounded-xl p-6 md:col-span-2">
+                                <h3 class="font-gaming text-2xl text-cyan-400 mb-4">CHARACTER SKIN</h3>
+                                <div id="skin-selection" class="grid grid-cols-4 gap-4">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- RIGHT PANEL (Play controls) -->
+            <aside class="w-full md:w-1/4 lg:w-1/6 p-6 flex flex-col justify-end items-end z-20 pointer-events-none">
+                <div class="pointer-events-auto w-full max-w-sm flex flex-col items-end space-y-4">
+                    
+                    <!-- Mode Selector Card -->
+                    <div class="w-full bg-black/60 backdrop-blur-md border border-white/10 p-5 rounded-xl transition-all duration-300 group hover:border-yellow-400/50 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20 group-hover:scale-110 transition-transform duration-700"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-gray-300 text-[10px] font-black uppercase tracking-widest bg-black/50 px-2 py-0.5 rounded">Selected Mode</h3>
+                                <button onclick="openModeSelector()" class="text-[10px] bg-yellow-400 text-black px-2 py-0.5 rounded font-bold hover:bg-white transition">CHANGE</button>
+                            </div>
+                            <h2 id="current-mode-title" class="font-gaming text-4xl text-white italic leading-none mb-1 drop-shadow-md">SQUAD</h2>
+                            <p id="current-mode-desc" class="text-xs text-gray-300 font-medium">Battle Royale • 4 Player Teams</p>
+                            
+                            <!-- Fill Toggle -->
+                            <div class="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+                                <span class="text-xs font-bold text-gray-300 uppercase tracking-wide">Squad Fill</span>
+                                <button id="fillToggle" class="w-10 h-5 bg-emerald-500 rounded-full relative transition-colors duration-200 shadow-inner" onclick="toggleFill()">
+                                    <div id="fillKnob" class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- THE PLAY BUTTON -->
+                    <button id="readyBtn" onclick="toggleReady()" class="group relative w-full h-24 bg-yellow-400 hover:bg-yellow-300 skew-tab transform transition-all active:scale-[0.98] shadow-[0_0_25px_rgba(250,204,21,0.4)] flex items-center justify-center overflow-hidden ring-pulse">
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent w-1/2 -skew-x-12 translate-x-[-150%] animate-shine"></div>
+                        <div class="skew-tab-content flex flex-col items-center leading-none z-10">
+                            <span id="readyText" class="font-gaming text-6xl text-blue-950 uppercase drop-shadow-sm group-hover:scale-105 transition-transform">PLAY</span>
+                            <span id="readySub" class="text-[10px] font-black text-blue-900/70 tracking-[0.3em] uppercase mt-1">Matchmaking Ready</span>
+                        </div>
+                    </button>
+                    
+                    <div class="text-[10px] text-gray-500 font-mono w-full text-center flex items-center justify-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span id="region-display">NA-WEST • 24ms</span>
+                        <button onclick="openRegionSelector()" class="ml-2 text-cyan-400 hover:text-white underline">Change</button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="h-10 bg-black/90 backdrop-blur border-t border-white/10 flex items-center justify-between px-6 z-30 text-[10px] text-gray-500 font-bold tracking-widest uppercase">
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleChat()" class="hover:text-white cursor-pointer transition">Global Chat [Enter]</button>
+                <span class="w-px h-3 bg-white/10"></span>
+                <button onclick="toggleFriends()" class="hover:text-white cursor-pointer transition">Friends (<span id="friends-count">0</span>)</button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span>BITBLAST Client v0.9.2 (BETA)</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- CHAT PANEL -->
+    <div id="chat-panel" class="fixed bottom-0 left-0 w-96 h-96 bg-black/90 backdrop-blur-xl border-t border-r border-white/10 transform translate-y-full transition-transform duration-300 z-[90] flex flex-col">
+        <div class="p-3 border-b border-white/10 flex justify-between items-center">
+            <h3 class="font-gaming text-lg text-white">GLOBAL CHAT</h3>
+            <button onclick="toggleChat()" class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-3 space-y-2 text-sm">
+            <!-- Messages populated by JS -->
+        </div>
+        <div class="p-3 border-t border-white/10">
+            <div class="flex gap-2">
+                <input id="chat-input" type="text" placeholder="Type a message..." class="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500" onkeypress="handleChatKey(event)">
+                <button onclick="sendChatMessage()" class="bg-cyan-500 text-black px-4 py-2 rounded font-bold hover:bg-cyan-400 transition">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FRIENDS PANEL -->
+    <div id="friends-panel" class="fixed bottom-0 right-0 w-80 h-96 bg-black/90 backdrop-blur-xl border-t border-l border-white/10 transform translate-y-full transition-transform duration-300 z-[90] flex flex-col">
+        <div class="p-3 border-b border-white/10 flex justify-between items-center">
+            <h3 class="font-gaming text-lg text-white">FRIENDS</h3>
+            <button onclick="toggleFriends()" class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="friends-list" class="flex-1 overflow-y-auto p-3">
+            <!-- Friends populated by JS -->
+        </div>
+        <div class="p-3 border-t border-white/10">
+            <button onclick="addFriendPrompt()" class="w-full bg-cyan-500 text-black py-2 rounded font-bold hover:bg-cyan-400 transition">Add Friend</button>
+        </div>
+    </div>
+
+    <!-- MODE SELECTOR MODAL -->
+    <div id="mode-modal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="w-full max-w-4xl bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="mode-modal-content">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+                <h2 class="font-gaming text-3xl text-white tracking-wide">SELECT GAME MODE</h2>
+                <button onclick="closeModeSelector()" class="text-gray-400 hover:text-white">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Team Deathmatch -->
+                <div onclick="selectMode('TEAM DEATHMATCH', '5v5 Tactical Combat')" class="mode-card cursor-pointer border-2 border-transparent bg-gradient-to-b from-cyan-900 to-black p-4 rounded-xl relative group overflow-hidden h-64 flex flex-col justify-end hover:border-cyan-400 transition-all">
+                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80')] bg-cover opacity-40 group-hover:scale-110 transition-transform duration-500"></div>
+                    <div class="relative z-10">
+                        <h3 class="font-gaming text-2xl text-white italic group-hover:text-cyan-400 transition">TEAM DEATHMATCH</h3>
+                        <p class="text-xs text-gray-300">5v5 Tactical Combat</p>
+                    </div>
+                </div>
+
+                <!-- Free-For-All -->
+                <div onclick="selectMode('FREE FOR ALL', 'Every player for themselves')" class="mode-card cursor-pointer border-2 border-transparent bg-gradient-to-b from-purple-900 to-black p-4 rounded-xl relative group overflow-hidden h-64 flex flex-col justify-end hover:border-purple-400 transition-all">
+                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1535086181678-5a5c4d23aa7d?auto=format&fit=crop&q=80')] bg-cover opacity-40 group-hover:scale-110 transition-transform duration-500"></div>
+                    <div class="relative z-10">
+                        <h3 class="font-gaming text-2xl text-white italic group-hover:text-purple-400 transition">FREE FOR ALL</h3>
+                        <p class="text-xs text-gray-300">Every player for themselves</p>
+                    </div>
+                </div>
+
+                <!-- Capture The Flag -->
+                <div onclick="selectMode('CAPTURE THE FLAG', 'Steal the enemy flag')" class="mode-card cursor-pointer border-2 border-transparent bg-gradient-to-b from-emerald-900 to-black p-4 rounded-xl relative group overflow-hidden h-64 flex flex-col justify-end hover:border-emerald-400 transition-all">
+                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&q=80')] bg-cover opacity-40 group-hover:scale-110 transition-transform duration-500"></div>
+                    <div class="relative z-10">
+                        <h3 class="font-gaming text-2xl text-white italic group-hover:text-emerald-400 transition">CAPTURE THE FLAG</h3>
+                        <p class="text-xs text-gray-300">Steal the enemy flag</p>
+                    </div>
+                </div>
+
+                <!-- Battle Royale -->
+                <div onclick="selectMode('BATTLE ROYALE', 'Be the last one standing')" class="mode-card cursor-pointer border-2 border-transparent bg-gradient-to-b from-red-900 to-black p-4 rounded-xl relative group overflow-hidden h-64 flex flex-col justify-end hover:border-red-500 transition-all">
+                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80')] bg-cover opacity-40 group-hover:scale-110 transition-transform duration-500"></div>
+                    <div class="relative z-10">
+                        <h3 class="font-gaming text-2xl text-white italic group-hover:text-red-500 transition">BATTLE ROYALE</h3>
+                        <p class="text-xs text-gray-300">Be the last one standing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="w-full max-w-4xl bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="settings-modal-content">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+                <h2 class="font-gaming text-3xl text-white tracking-wide">SETTINGS</h2>
+                <button onclick="closeSettings()" class="text-gray-400 hover:text-white">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-8 max-h-[70vh] overflow-y-auto">
+                <div class="space-y-8">
+                    <!-- Audio Settings -->
+                    <div>
+                        <h3 class="font-gaming text-2xl text-cyan-400 mb-4">AUDIO</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-300">Master Volume</label>
+                                <input type="range" min="0" max="100" value="80" class="w-64" id="master-volume" onchange="updateVolume('master', this.value)">
+                                <span id="master-vol-display" class="text-white font-mono w-12 text-right">80%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-300">Music Volume</label>
+                                <input type="range" min="0" max="100" value="60" class="w-64" id="music-volume" onchange="updateVolume('music', this.value)">
+                                <span id="music-vol-display" class="text-white font-mono w-12 text-right">60%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-300">SFX Volume</label>
+                                <input type="range" min="0" max="100" value="100" class="w-64" id="sfx-volume" onchange="updateVolume('sfx', this.value)">
+                                <span id="sfx-vol-display" class="text-white font-mono w-12 text-right">100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Graphics Settings -->
+                    <div>
+                        <h3 class="font-gaming text-2xl text-cyan-400 mb-4">GRAPHICS</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-300">Quality Preset</label>
+                                <select class="bg-white/5 border border-white/10 rounded px-4 py-2 text-white" id="graphics-quality">
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high" selected>High</option>
+                                    <option value="ultra">Ultra</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-300">FPS Limit</label>
+                                <select class="bg-white/5 border border-white/10 rounded px-4 py-2 text-white" id="fps-limit">
+                                    <option value="30">30 FPS</option>
+                                    <option value="60" selected>60 FPS</option>
+                                    <option value="120">120 FPS</option>
+                                    <option value="unlimited">Unlimited</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-300">Particles</label>
+                                <input type="checkbox" checked id="particles-toggle" class="w-5 h-5" onchange="toggleParticles()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div>
+                        <h3 class="font-gaming text-2xl text-cyan-400 mb-4">CONTROLS</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-300">Mouse Sensitivity</label>
+                                <input type="range" min="1" max="100" value="50" class="w-64" id="sensitivity">
+                                <span id="sens-display" class="text-white font-mono w-12 text-right">50</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <label class="text-gray-300">Invert Y-Axis</label>
+                                <input type="checkbox" id="invert-y" class="w-5 h-5">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATIONS PANEL -->
+    <div id="notifications-panel" class="fixed top-20 right-6 w-96 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl transform transition-transform duration-300 z-[90] max-h-[70vh] overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-white/10 flex justify-between items-center">
+            <h3 class="font-gaming text-lg text-white">NOTIFICATIONS</h3>
+            <button onclick="closeNotifications()" class="text-gray-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="notifications-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+            <!-- Notifications populated by JS -->
+        </div>
+    </div>
+
+    <!-- REGION SELECTOR MODAL -->
+    <div id="region-modal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="region-modal-content">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+                <h2 class="font-gaming text-3xl text-white tracking-wide">SELECT REGION</h2>
+                <button onclick="closeRegionSelector()" class="text-gray-400 hover:text-white">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-8 grid grid-cols-2 gap-4">
+                <button onclick="selectRegion('NA-WEST', 24)" class="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-cyan-500 p-4 rounded-xl transition-all text-left">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-gaming text-xl text-white">NA-WEST</h3>
+                            <p class="text-xs text-gray-400 mt-1">North America West</p>
+                        </div>
+                        <span class="text-emerald-400 font-mono">24ms</span>
+                    </div>
+                </button>
+                <button onclick="selectRegion('NA-EAST', 42)" class="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-cyan-500 p-4 rounded-xl transition-all text-left">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-gaming text-xl text-white">NA-EAST</h3>
+                            <p class="text-xs text-gray-400 mt-1">North America East</p>
+                        </div>
+                        <span class="text-emerald-400 font-mono">42ms</span>
+                    </div>
+                </button>
+                <button onclick="selectRegion('EU-WEST', 98)" class="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-cyan-500 p-4 rounded-xl transition-all text-left">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-gaming text-xl text-white">EU-WEST</h3>
+                            <p class="text-xs text-gray-400 mt-1">Europe West</p>
+                        </div>
+                        <span class="text-yellow-400 font-mono">98ms</span>
+                    </div>
+                </button>
+                <button onclick="selectRegion('ASIA', 156)" class="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-cyan-500 p-4 rounded-xl transition-all text-left">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-gaming text-xl text-white">ASIA</h3>
+                            <p class="text-xs text-gray-400 mt-1">Asia Pacific</p>
+                        </div>
+                        <span class="text-red-400 font-mono">156ms</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUICK CHAT WHEEL -->
+    <div id="chat-wheel" class="chat-wheel hidden z-[110]">
+        <!-- Populated dynamically -->
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-24 left-1/2 transform -translate-x-1/2 bg-cyan-500 text-black px-6 py-3 rounded shadow-xl font-bold transition-all duration-500 z-[200] opacity-0 translate-y-[-20px] pointer-events-none">
+        Profile Saved!
+    </div>
+
+    <!-- MAIN LOGIC SCRIPT -->
+    <script>
+        // ===================================
+        // STATE MANAGEMENT
+        // ===================================
+        const state = {
+            username: localStorage.getItem('bitblast_username') || `GUEST_${Math.floor(Math.random() * 9000) + 1000}`,
+            level: parseInt(localStorage.getItem('bitblast_level')) || 1,
+            xp: parseInt(localStorage.getItem('bitblast_xp')) || 150,
+            credits: parseInt(localStorage.getItem('bitblast_credits')) || 1250,
+            mode: 'FREE FOR ALL',
+            modeDesc: 'Every player for themselves',
+            isReady: false,
+            fill: true,
+            region: 'NA-WEST',
+            ping: 24,
+            battlePass: {
+                isPremium: localStorage.getItem('bitblast_bp_premium') === 'true',
+                tier: parseInt(localStorage.getItem('bitblast_bp_tier')) || 1
+            },
+            inventory: JSON.parse(localStorage.getItem('bitblast_inventory')) || {
+                primary: 'Assault Rifle',
+                secondary: 'Pistol',
+                skin: 'Default'
+            },
+            friends: JSON.parse(localStorage.getItem('bitblast_friends')) || [],
+            settings: JSON.parse(localStorage.getItem('bitblast_settings')) || {
+                masterVolume: 80,
+                musicVolume: 60,
+                sfxVolume: 100,
+                graphicsQuality: 'high',
+                fpsLimit: 60,
+                particles: true,
+                sensitivity: 50,
+                invertY: false
+            }
+        };
+
+        // ===================================
+        // AUDIO SYSTEM
+        // ===================================
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const sounds = {};
+
+        function playSound(type, frequency = 440, duration = 0.1) {
+            if (!state.settings.sfxVolume) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type === 'click' ? 'sine' : 'square';
+            
+            const volume = (state.settings.sfxVolume / 100) * 0.1;
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        // Button hover sound
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                playSound('hover', 800, 0.05);
+            }
+        });
+
+        // Button click sound
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                playSound('click', 600, 0.1);
+            }
+        });
+
+        // ===================================
+        // PARTICLE SYSTEM
+        // ===================================
+        function createParticles() {
+            if (!state.settings.particles) return;
+            
+            const container = document.getElementById('particles');
+            setInterval(() => {
+                if (!state.settings.particles) return;
+                
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 4 + 2;
+                const startX = Math.random() * window.innerWidth;
+                const startY = window.innerHeight + 20;
+                const endX = startX + (Math.random() - 0.5) * 200;
+                const endY = -20;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${startX}px`;
+                particle.style.top = `${startY}px`;
+                particle.style.setProperty('--tx', `${endX - startX}px`);
+                particle.style.setProperty('--ty', `${endY - startY}px`);
+                
+                container.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 8000);
+            }, 500);
+        }
+
+        function toggleParticles() {
+            state.settings.particles = document.getElementById('particles-toggle').checked;
+            saveSettings();
+        }
+
+        // ===================================
+        // INITIALIZATION
+        // ===================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeUI();
+            createParticles();
+            populateQuests();
+            populateBattlePass();
+            populateLeaderboard();
+            populateStore();
+            populateLoadout();
+            renderSquadSlots();
+            renderFriends();
+            initChatWheel();
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', handleKeyPress);
+        });
+
+        function initializeUI() {
+            document.getElementById('player-name').innerText = state.username;
+            document.getElementById('credits').innerText = `${state.credits.toLocaleString()} CR`;
+            document.getElementById('region-display').innerText = `${state.region} • ${state.ping}ms`;
+            
+            updateXPBar();
+            updateBattlePassStatus();
+            updateUI();
+            
+            // Load settings
+            document.getElementById('master-volume').value = state.settings.masterVolume;
+            document.getElementById('music-volume').value = state.settings.musicVolume;
+            document.getElementById('sfx-volume').value = state.settings.sfxVolume;
+            document.getElementById('master-vol-display').innerText = `${state.settings.masterVolume}%`;
+            document.getElementById('music-vol-display').innerText = `${state.settings.musicVolume}%`;
+            document.getElementById('sfx-vol-display').innerText = `${state.settings.sfxVolume}%`;
+            document.getElementById('sensitivity').value = state.settings.sensitivity;
+            document.getElementById('sens-display').innerText = state.settings.sensitivity;
+            document.getElementById('particles-toggle').checked = state.settings.particles;
+        }
+
+        function updateUI() {
+            document.getElementById('current-mode-title').innerText = state.mode;
+            document.getElementById('current-mode-desc').innerText = state.modeDesc;
+        }
+
+        function updateXPBar() {
+            const xpNeeded = state.level * 1000;
+            const percentage = (state.xp / xpNeeded) * 100;
+            document.getElementById('xp-bar').style.width = `${percentage}%`;
+            document.getElementById('level-display').innerText = `Lvl ${state.level}`;
+            document.getElementById('xp-display').innerText = `${state.xp} / ${xpNeeded} XP`;
+        }
+
+        function updateBattlePassStatus() {
+            document.getElementById('bp-status').innerText = state.battlePass.isPremium ? 'PREMIUM PASS' : 'FREE PASS';
+            document.getElementById('bp-tier-badge').innerText = state.battlePass.tier;
+        }
+
+        // ===================================
+        // NAVIGATION
+        // ===================================
+        function switchTab(tabId) {
+            // Update tab styling
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.remove('text-yellow-400', 'border-yellow-400');
+                t.classList.add('text-gray-400', 'border-transparent');
+            });
+            const active = document.getElementById(`tab-${tabId}`);
+            if(active) {
+                active.classList.remove('text-gray-400', 'border-transparent');
+                active.classList.add('text-yellow-400', 'border-yellow-400');
+            }
+
+            // Hide all views
+            document.querySelectorAll('[id^="view-"]').forEach(v => {
+                v.classList.add('hidden');
+                v.classList.remove('flex');
+            });
+
+            // Show selected view
+            const view = document.getElementById(`view-${tabId}`);
+            if (view) {
+                view.classList.remove('hidden');
+                view.classList.add('flex');
+            }
+        }
+
+        // ===================================
+        // QUESTS
+        // ===================================
+        const quests = [
+            { id: 1, title: 'Play your first match', progress: 0, max: 1, xp: 1000, color: 'emerald' },
+            { id: 2, title: 'Deal 500 Damage', progress: 0, max: 500, xp: 2500, color: 'blue' },
+            { id: 3, title: 'Get 3 Eliminations', progress: 0, max: 3, xp: 3000, color: 'purple' },
+            { id: 4, title: 'Survive 10 Minutes', progress: 0, max: 600, xp: 1500, color: 'yellow' }
+        ];
+
+        function populateQuests() {
+            const container = document.getElementById('quest-list');
+            container.innerHTML = quests.map(q => `
+                <div class="bg-black/40 hover:bg-black/60 transition-all p-3 rounded-lg border-l-[3px] border-${q.color}-500 cursor-pointer group relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-sm font-bold text-gray-200 group-hover:text-white">${q.title}</p>
+                        <p class="text-xs text-${q.color}-400/80 mt-1">${q.progress}/${q.max} Completed</p>
+                    </div>
+                    <div class="absolute right-2 top-2">
+                        <span class="text-xs font-gaming text-${q.color}-400">+${(q.xp/1000).toFixed(1)}K XP</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ===================================
+        // BATTLE PASS
+        // ===================================
+        function populateBattlePass() {
+            const container = document.getElementById('bp-tiers');
+            const tiers = [];
+            
+            for (let i = 1; i <= 50; i++) {
+                const isLocked = i > state.battlePass.tier;
+                const isPremium = i % 5 === 0;
+                
+                tiers.push(`
+                    <div class="bp-tier bg-black/60 backdrop-blur border ${isLocked ? 'border-white/10' : 'border-yellow-400'} p-4 rounded-xl relative overflow-hidden ${isLocked ? 'opacity-50' : ''}">
+                        ${isPremium ? '<div class="absolute top-0 right-0 bg-gradient-to-l from-yellow-400 to-orange-500 text-black text-[8px] font-bold px-2 py-0.5">PREMIUM</div>' : ''}
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-gaming text-lg text-white">TIER ${i}</span>
+                            ${isLocked ? '<svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>' : '<svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>'}
+                        </div>
+                        <div class="aspect-square bg-gradient-to-br from-cyan-900/20 to-purple-900/20 rounded-lg flex items-center justify-center mb-2">
+                            <svg class="w-12 h-12 text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                        </div>
+                        <p class="text-[10px] text-gray-400 text-center">Weapon Skin</p>
+                    </div>
+                `);
+            }
+            
+            container.innerHTML = tiers.join('');
+        }
+
+        function upgradeBattlePass() {
+            if (state.credits >= 950) {
+                state.credits -= 950;
+                state.battlePass.isPremium = true;
+                localStorage.setItem('bitblast_credits', state.credits);
+                localStorage.setItem('bitblast_bp_premium', 'true');
+                document.getElementById('credits').innerText = `${state.credits.toLocaleString()} CR`;
+                updateBattlePassStatus();
+                showToast('Battle Pass Upgraded!', 'bg-yellow-400');
+                playSound('success', 800, 0.3);
+            } else {
+                showToast('Insufficient Credits', 'bg-red-500');
+                playSound('error', 200, 0.2);
+            }
+        }
+
+        // ===================================
+        // LEADERBOARD
+        // ===================================
+        function populateLeaderboard() {
+            const leaders = [
+                { rank: 1, name: 'Ninja_Prime', wins: 4291, kd: 8.4, color: 'yellow' },
+                { rank: 2, name: 'Shadow_Step', wins: 3812, kd: 7.9, color: 'gray' },
+                { rank: 3, name: 'Vortex_Queen', wins: 3500, kd: 7.2, color: 'amber' },
+                { rank: 4, name: 'Cyber_Reaper', wins: 3201, kd: 6.8, color: 'white' },
+                { rank: 5, name: 'Ghost_Ops', wins: 2987, kd: 6.5, color: 'white' }
+            ];
+
+            const container = document.getElementById('leaderboard-list');
+            container.innerHTML = leaders.map(l => `
+                <div class="flex items-center p-4 hover:bg-white/5 transition group">
+                    <div class="w-16 text-center font-gaming text-2xl text-${l.color}-400 ${l.rank <= 3 ? 'glow-gold' : ''}">#${l.rank}</div>
+                    <div class="flex-1 flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded bg-${l.color}-400/20 border border-${l.color}-400/50"></div>
+                        <span class="font-bold text-lg text-white">${l.name}</span>
+                    </div>
+                    <div class="w-32 text-center font-mono text-${l.color}-400">${l.wins.toLocaleString()}</div>
+                    <div class="w-32 text-center font-mono text-gray-300">${l.kd}</div>
+                </div>
+            `).join('') + `
+                <div class="flex items-center p-4 bg-cyan-900/20 border-l-4 border-cyan-400">
+                    <div class="w-16 text-center font-gaming text-xl text-cyan-400">#--</div>
+                    <div class="flex-1 flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded bg-cyan-400/20 border border-cyan-400/50"></div>
+                        <span class="font-bold text-lg text-white">${state.username}</span>
+                    </div>
+                    <div class="w-32 text-center font-mono text-gray-300">0</div>
+                    <div class="w-32 text-center font-mono text-gray-300">0.0</div>
+                </div>
+            `;
+        }
+
+        // ===================================
+        // STORE
+        // ===================================
+        function populateStore() {
+            const items = [
+                { name: 'Cyber Warrior', type: 'Skin', price: 1200, rarity: 'legendary', featured: true },
+                { name: 'Thunder Strike', type: 'Weapon', price: 800, rarity: 'epic', featured: false },
+                { name: 'Victory Dance', type: 'Emote', price: 500, rarity: 'rare', featured: false },
+                { name: 'Neon Trail', type: 'Effect', price: 300, rarity: 'uncommon', featured: false },
+                { name: 'Ghost Protocol', type: 'Skin', price: 1500, rarity: 'legendary', featured: true },
+                { name: 'Plasma Rifle', type: 'Weapon', price: 950, rarity: 'epic', featured: false }
+            ];
+
+            const container = document.getElementById('store-items');
+            container.innerHTML = items.map(item => `
+                <div class="store-item bg-black/60 backdrop-blur border border-white/10 rounded-xl overflow-hidden group hover:border-${item.rarity === 'legendary' ? 'yellow' : item.rarity === 'epic' ? 'purple' : 'blue'}-400 transition-all cursor-pointer">
+                    ${item.featured ? '<div class="absolute top-2 right-2 bg-yellow-400 text-black text-[8px] font-bold px-2 py-1 rounded z-10">FEATURED</div>' : ''}
+                    <div class="aspect-square bg-gradient-to-br from-cyan-900/20 to-purple-900/20 flex items-center justify-center p-8">
+                        <svg class="w-full h-full text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-gaming text-lg text-white">${item.name}</h3>
+                                <p class="text-xs text-gray-400 uppercase">${item.type} • ${item.rarity}</p>
+                            </div>
+                        </div>
+                        <button onclick="purchaseItem('${item.name}', ${item.price})" class="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 rounded transition mt-2">
+                            ${item.price} CR
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function purchaseItem(name, price) {
+            if (state.credits >= price) {
+                state.credits -= price;
+                localStorage.setItem('bitblast_credits', state.credits);
+                document.getElementById('credits').innerText = `${state.credits.toLocaleString()} CR`;
+                showToast(`Purchased ${name}!`, 'bg-emerald-500');
+                playSound('success', 800, 0.3);
+            } else {
+                showToast('Insufficient Credits', 'bg-red-500');
+                playSound('error', 200, 0.2);
+            }
+        }
+
+        // ===================================
+        // LOADOUT
+        // ===================================
+        function populateLoadout() {
+            const weapons = {
+                primary: ['Assault Rifle', 'SMG', 'Shotgun', 'Sniper Rifle'],
+                secondary: ['Pistol', 'Machine Pistol', 'Revolver']
+            };
+
+            const skins = ['Default', 'Cyber Warrior', 'Ghost Protocol', 'Neon Phantom', 'Shadow Ops'];
+
+            document.getElementById('primary-weapon').innerHTML = weapons.primary.map(w => `
+                <button onclick="selectWeapon('primary', '${w}')" class="w-full text-left p-3 rounded-lg ${state.inventory.primary === w ? 'bg-cyan-500/20 border-2 border-cyan-500' : 'bg-white/5 border border-white/10'} hover:bg-white/10 transition">
+                    <span class="font-bold text-white">${w}</span>
+                </button>
+            `).join('');
+
+            document.getElementById('secondary-weapon').innerHTML = weapons.secondary.map(w => `
+                <button onclick="selectWeapon('secondary', '${w}')" class="w-full text-left p-3 rounded-lg ${state.inventory.secondary === w ? 'bg-cyan-500/20 border-2 border-cyan-500' : 'bg-white/5 border border-white/10'} hover:bg-white/10 transition">
+                    <span class="font-bold text-white">${w}</span>
+                </button>
+            `).join('');
+
+            document.getElementById('skin-selection').innerHTML = skins.map(s => `
+                <button onclick="selectSkin('${s}')" class="aspect-square ${state.inventory.skin === s ? 'bg-cyan-500/20 border-2 border-cyan-500' : 'bg-white/5 border border-white/10'} rounded-lg hover:bg-white/10 transition flex items-center justify-center">
+                    <svg class="w-12 h-12 text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                </button>
+            `).join('');
+        }
+
+        function selectWeapon(slot, weapon) {
+            state.inventory[slot] = weapon;
+            localStorage.setItem('bitblast_inventory', JSON.stringify(state.inventory));
+            populateLoadout();
+            showToast(`${weapon} equipped!`, 'bg-emerald-500');
+        }
+
+        function selectSkin(skin) {
+            state.inventory.skin = skin;
+            localStorage.setItem('bitblast_inventory', JSON.stringify(state.inventory));
+            populateLoadout();
+            showToast(`${skin} skin equipped!`, 'bg-emerald-500');
+        }
+
+        // ===================================
+        // SQUAD & FRIENDS
+        // ===================================
+        function renderSquadSlots() {
+            // Positions for 2 empty slots (Squad mode)
+            // Amy is at center circle (50%)
+            // Slots at left (30%) and right (70%)
+            const slots = [
+                { left: '30%', top: '50%' },
+                { left: '70%', top: '50%' }
+            ];
+
+            const container = document.getElementById('squad-slots');
+            container.innerHTML = slots.map((pos, i) => {
+                const style = Object.entries(pos).map(([k,v]) => `${k}:${v}`).join(';');
+                return `
+                    <div class="absolute pointer-events-auto transform -translate-x-1/2 -translate-y-1/2" style="${style}">
+                        <button onclick="inviteToSquad(${i})" class="w-12 h-12 rounded-full bg-black/40 hover:bg-white/20 border-2 border-white/30 hover:border-white flex items-center justify-center transition-all duration-200 group shadow-lg backdrop-blur-sm">
+                            <svg class="w-6 h-6 text-white group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function inviteToSquad(slot) {
+            showToast('Invite sent!', 'bg-cyan-500');
+        }
+
+        function renderFriends() {
+            const container = document.getElementById('friends-list');
+            
+            if (state.friends.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <p class="font-bold">No friends yet</p>
+                        <p class="text-xs mt-1">Add friends to play together!</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = state.friends.map(f => `
+                    <div class="bg-black/40 p-3 rounded-lg flex items-center justify-between hover:bg-black/60 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/50 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                            </div>
+                            <div>
+                                <p class="font-bold text-white">${f.name}</p>
+                                <p class="text-xs text-${f.online ? 'emerald' : 'gray'}-400">${f.online ? 'Online' : 'Offline'}</p>
+                            </div>
+                        </div>
+                        <button onclick="inviteFriend('${f.name}')" class="text-cyan-400 hover:text-white text-xs font-bold">INVITE</button>
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('friends-count').innerText = state.friends.length;
+        }
+
+        function addFriendPrompt() {
+            const name = prompt('Enter friend\'s username:');
+            if (name && name.trim()) {
+                state.friends.push({ name: name.trim(), online: Math.random() > 0.5 });
+                localStorage.setItem('bitblast_friends', JSON.stringify(state.friends));
+                renderFriends();
+                showToast(`Friend request sent to ${name}`, 'bg-cyan-500');
+            }
+        }
+
+        function inviteFriend(name) {
+            showToast(`Invited ${name} to squad!`, 'bg-emerald-500');
+        }
+
+        // ===================================
+        // CHAT SYSTEM
+        // ===================================
+        const chatMessages = [
+            { user: 'System', message: 'Welcome to BITBLAST!', color: 'cyan' },
+            { user: 'PlayerX', message: 'LFG for squad!', color: 'white' },
+            { user: 'GamerGirl', message: 'Anyone down for Arena?', color: 'pink' }
+        ];
+
+        function toggleChat() {
+            const panel = document.getElementById('chat-panel');
+            panel.classList.toggle('translate-y-full');
+            
+            if (!panel.classList.contains('translate-y-full')) {
+                renderChat();
+                document.getElementById('chat-input').focus();
+            }
+        }
+
+        function renderChat() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = chatMessages.map(m => `
+                <div class="chat-message">
+                    <span class="font-bold text-${m.color}-400">${m.user}:</span>
+                    <span class="text-gray-300 ml-2">${m.message}</span>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                chatMessages.push({ user: state.username, message, color: 'emerald' });
+                input.value = '';
+                renderChat();
+            }
+        }
+
+        function handleChatKey(e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        // ===================================
+        // QUICK CHAT WHEEL
+        // ===================================
+        function initChatWheel() {
+            const quickChats = [
+                { text: 'GG!', emoji: '🎮' },
+                { text: 'Nice!', emoji: '👍' },
+                { text: 'Help!', emoji: '🆘' },
+                { text: 'Thanks', emoji: '🙏' }
+            ];
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'z' || e.key === 'Z') {
+                    const wheel = document.getElementById('chat-wheel');
+                    wheel.classList.remove('hidden');
+                    
+                    const positions = [
+                        { top: '0', left: '50%', transform: 'translateX(-50%)' },
+                        { top: '50%', right: '0', transform: 'translateY(-50%)' },
+                        { bottom: '0', left: '50%', transform: 'translateX(-50%)' },
+                        { top: '50%', left: '0', transform: 'translateY(-50%)' }
+                    ];
+
+                    wheel.innerHTML = quickChats.map((chat, i) => {
+                        const pos = positions[i];
+                        const style = Object.entries(pos).map(([k,v]) => `${k}:${v}`).join(';');
+                        return `
+                            <div class="chat-wheel-item" style="${style}" onclick="sendQuickChat('${chat.text}')">
+                                <span class="text-2xl">${chat.emoji}</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'z' || e.key === 'Z') {
+                    document.getElementById('chat-wheel').classList.add('hidden');
+                }
+            });
+        }
+
+        function sendQuickChat(text) {
+            chatMessages.push({ user: state.username, message: text, color: 'yellow' });
+            if (!document.getElementById('chat-panel').classList.contains('translate-y-full')) {
+                renderChat();
+            }
+            showToast(`Quick chat: ${text}`, 'bg-yellow-400 text-black');
+        }
+
+        // ===================================
+        // FRIENDS PANEL
+        // ===================================
+        function toggleFriends() {
+            const panel = document.getElementById('friends-panel');
+            panel.classList.toggle('translate-y-full');
+        }
+
+        // ===================================
+        // MODALS
+        // ===================================
+        function openModeSelector() {
+            openModal('mode-modal');
+        }
+
+        function closeModeSelector() {
+            closeModal('mode-modal');
+        }
+
+        function selectMode(title, desc) {
+            state.mode = title;
+            state.modeDesc = desc;
+            updateUI();
+            closeModeSelector();
+            showToast(`Mode changed to ${title}`, 'bg-cyan-500');
+        }
+
+        function openSettings() {
+            openModal('settings-modal');
+        }
+
+        function closeSettings() {
+            closeModal('settings-modal');
+        }
+
+        function openNotifications() {
+            const panel = document.getElementById('notifications-panel');
+            panel.classList.remove('translate-x-full');
+            populateNotifications();
+        }
+
+        function closeNotifications() {
+            const panel = document.getElementById('notifications-panel');
+            panel.classList.add('translate-x-full');
+        }
+
+        function populateNotifications() {
+            const notifications = [
+                { type: 'friend', message: 'PlayerX sent you a friend request', time: '2m ago' },
+                { type: 'achievement', message: 'Achievement Unlocked: First Victory!', time: '1h ago' },
+                { type: 'store', message: 'New items in the store!', time: '3h ago' }
+            ];
+
+            const container = document.getElementById('notifications-list');
+            container.innerHTML = notifications.map(n => `
+                <div class="notification bg-black/40 p-3 rounded-lg border-l-4 border-cyan-500">
+                    <p class="text-sm text-white font-bold">${n.message}</p>
+                    <p class="text-xs text-gray-400 mt-1">${n.time}</p>
+                </div>
+            `).join('');
+        }
+
+        function openRegionSelector() {
+            openModal('region-modal');
+        }
+
+        function closeRegionSelector() {
+            closeModal('region-modal');
+        }
+
+        function selectRegion(region, ping) {
+            state.region = region;
+            state.ping = ping;
+            document.getElementById('region-display').innerText = `${region} • ${ping}ms`;
+            closeRegionSelector();
+            showToast(`Region changed to ${region}`, 'bg-cyan-500');
+        }
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            const content = document.getElementById(id.replace('-modal', '-modal-content'));
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            const content = document.getElementById(id.replace('-modal', '-modal-content'));
+            modal.classList.add('opacity-0');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // ===================================
+        // SETTINGS
+        // ===================================
+        function updateVolume(type, value) {
+            state.settings[type + 'Volume'] = parseInt(value);
+            document.getElementById(type + '-vol-display').innerText = `${value}%`;
+            saveSettings();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('bitblast_settings', JSON.stringify(state.settings));
+        }
+
+        // ===================================
+        // GAME CONTROLS
+        // ===================================
+        function toggleFill() {
+            state.fill = !state.fill;
+            const btn = document.getElementById('fillToggle');
+            const knob = document.getElementById('fillKnob');
+            
+            if (state.fill) {
+                btn.classList.remove('bg-gray-600');
+                btn.classList.add('bg-emerald-500');
+                knob.style.transform = 'translateX(0)';
+            } else {
+                btn.classList.remove('bg-emerald-500');
+                btn.classList.add('bg-gray-600');
+                knob.style.transform = 'translateX(-20px)';
+            }
+        }
+
+        function toggleReady() {
+            state.isReady = !state.isReady;
+            const btn = document.getElementById('readyBtn');
+            const mainText = document.getElementById('readyText');
+            const subText = document.getElementById('readySub');
+
+            if (state.isReady) {
+                btn.classList.remove('bg-yellow-400', 'hover:bg-yellow-300', 'ring-pulse');
+                btn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+                mainText.innerText = "CANCEL";
+                mainText.classList.remove('text-blue-950');
+                mainText.classList.add('text-white');
+                subText.innerText = "SEARCHING FOR MATCH...";
+                subText.classList.remove('text-blue-900/70');
+                subText.classList.add('text-white/80', 'animate-pulse');
+                
+                playSound('ready', 600, 0.5);
+                
+                // Simulate matchmaking
+                setTimeout(() => {
+                    if(state.isReady) {
+                        subText.innerText = "MATCH FOUND! LOADING...";
+                        subText.classList.add('text-emerald-400');
+                        playSound('success', 800, 0.5);
+                        
+                        setTimeout(() => {
+                            if(state.isReady) {
+                                showToast('Entering game...', 'bg-emerald-500');
+                                // Here you would redirect to the game
+                            }
+                        }, 2000);
+                    }
+                }, 3000);
+            } else {
+                btn.classList.add('bg-yellow-400', 'hover:bg-yellow-300', 'ring-pulse');
+                btn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+                mainText.innerText = "PLAY";
+                mainText.classList.add('text-blue-950');
+                mainText.classList.remove('text-white');
+                subText.innerText = "MATCHMAKING READY";
+                subText.classList.add('text-blue-900/70');
+                subText.classList.remove('text-white/80', 'animate-pulse', 'text-emerald-400');
+            }
+        }
+
+        function saveProfile() {
+            localStorage.setItem('bitblast_username', state.username);
+            localStorage.setItem('bitblast_level', state.level);
+            localStorage.setItem('bitblast_xp', state.xp);
+            
+            showToast('Profile Saved!', 'bg-cyan-500');
+            playSound('success', 800, 0.3);
+        }
+
+        // ===================================
+        // KEYBOARD SHORTCUTS
+        // ===================================
+        function handleKeyPress(e) {
+            // Enter - Open chat
+            if (e.key === 'Enter' && !e.target.matches('input, textarea')) {
+                toggleChat();
+            }
+            
+            // Escape - Close all modals
+            if (e.key === 'Escape') {
+                document.querySelectorAll('[id$="-modal"]').forEach(m => {
+                    if (!m.classList.contains('hidden')) {
+                        closeModal(m.id);
+                    }
+                });
+                
+                if (!document.getElementById('chat-panel').classList.contains('translate-y-full')) {
+                    toggleChat();
+                }
+                if (!document.getElementById('friends-panel').classList.contains('translate-y-full')) {
+                    toggleFriends();
+                }
+                if (!document.getElementById('notifications-panel').classList.contains('translate-x-full')) {
+                    closeNotifications();
+                }
+            }
+            
+            // F - Toggle friends
+            if (e.key === 'f' || e.key === 'F') {
+                if (!e.target.matches('input, textarea')) {
+                    toggleFriends();
+                }
+            }
+            
+            // M - Simulate voice toggle
+            if (e.key === 'm' || e.key === 'M') {
+                if (!e.target.matches('input, textarea')) {
+                    toggleVoice();
+                }
+            }
+        }
+
+        function toggleVoice() {
+            const indicator = document.getElementById('voice-indicator');
+            indicator.classList.toggle('hidden');
+            indicator.classList.toggle('animate-pulse');
+            indicator.classList.toggle('voice-active');
+        }
+
+        // ===================================
+        // TOAST NOTIFICATIONS
+        // ===================================
+        function showToast(message, bgClass = 'bg-cyan-500') {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.className = `fixed top-24 left-1/2 transform -translate-x-1/2 ${bgClass} text-black px-6 py-3 rounded shadow-xl font-bold transition-all duration-500 z-[200]`;
+            
+            toast.classList.remove('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+            }, 2000);
+        }
+
+        // ===================================
+        // STORE METHODS
+        // ===================================
+        function openStore() {
+            switchTab('store');
+        }
+    </script>
+
+    <!-- THREE.JS MODULE SCRIPT -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+
+        const ANIM_PATH = 'amyIdle.fbx';
+
+        let scene, camera, renderer;
+        let mixers = []; // Array to hold all animation mixers
+        let characters = []; // Array to hold all character models
+        const clock = new THREE.Clock();
+        const container = document.getElementById('canvas-container');
+        const loadingText = document.getElementById('loading-text');
+
+        // Squad positions - Fortnite-style formation with different models
+        // Properly spaced to fit all 4 characters in frame
+        const squadPositions = [
+            { model: 'amyLobby.fbx', x: 0, y: -45, z: 50, rotation: 0, scale: 1.27, isLeader: true }
+        ];
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            
+            const aspect = container.clientWidth / container.clientHeight;
+            // Fortnite style: Wider FOV, lower camera
+            camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            camera.position.set(0, 15, 280);
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Enhanced lighting for squad display
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+            scene.add(hemiLight);
+
+            // Main directional light (key light)
+            const dirLight = new THREE.DirectionalLight(0x22d3ee, 2.0);
+            dirLight.position.set(50, 100, 150);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+            
+            // Rim light from behind
+            const rimLight = new THREE.DirectionalLight(0x818cf8, 1.2);
+            rimLight.position.set(0, 80, -150);
+            scene.add(rimLight);
+
+            // Side fill lights for dramatic effect
+            const leftFill = new THREE.PointLight(0x22d3ee, 0.8, 400);
+            leftFill.position.set(-200, 100, 100);
+            scene.add(leftFill);
+
+            const rightFill = new THREE.PointLight(0xfacc15, 0.6, 400);
+            rightFill.position.set(200, 100, 100);
+            scene.add(rightFill);
+
+            // Ground glow spotlight
+            const groundSpot = new THREE.SpotLight(0x22d3ee, 0.8, 500, Math.PI / 4, 0.5);
+            groundSpot.position.set(0, 50, 200);
+            groundSpot.target.position.set(0, 0, -50);
+            scene.add(groundSpot);
+            scene.add(groundSpot.target);
+
+            loadingText.classList.remove('hidden');
+            
+            // Load all squad members
+            loadSquad();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function loadSquad() {
+            const loader = new FBXLoader();
+            let loadedCount = 0;
+            const totalToLoad = squadPositions.length;
+
+            squadPositions.forEach((pos, index) => {
+                loader.load(pos.model, (object) => {
+                    const character = object;
+                    character.scale.set(pos.scale, pos.scale, pos.scale);
+                    character.position.set(pos.x, pos.y, pos.z);
+                    character.rotation.y = pos.rotation;
+                    
+                    character.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            
+                            // Slightly different material tint for non-leaders to add variety
+                            if (!pos.isLeader && child.material) {
+                                if (Array.isArray(child.material)) {
+                                    child.material = child.material.map(mat => {
+                                        const newMat = mat.clone();
+                                        return newMat;
+                                    });
+                                }
+                            }
+                        }
+                    });
+
+                    scene.add(character);
+                    characters.push({ model: character, position: pos });
+
+                    // Create animation mixer for this character
+                    const mixer = new THREE.AnimationMixer(character);
+                    mixers.push(mixer);
+
+                    // Use the model's own embedded animation
+                    if (character.animations && character.animations.length > 0) {
+                        const action = mixer.clipAction(character.animations[0]);
+                        // Offset animation start time for non-leaders to avoid sync
+                        if (!pos.isLeader) {
+                            action.time = Math.random() * 2;
+                        }
+                        action.play();
+                    }
+
+                    loadedCount++;
+                    const percentComplete = Math.round((loadedCount / totalToLoad) * 100);
+                    loadingText.innerText = `LOADING SQUAD... ${percentComplete}%`;
+
+                    if (loadedCount === totalToLoad) {
+                        loadingText.classList.add('hidden');
+                    }
+
+                }, (xhr) => {
+                    if (xhr.lengthComputable && loadedCount === 0) {
+                        const percentComplete = Math.round((xhr.loaded / xhr.total) * 100);
+                        loadingText.innerText = `LOADING ASSETS... ${percentComplete}%`;
+                    }
+                }, (error) => {
+                    console.error('Error loading model:', error);
+                    loadedCount++;
+                    if (loadedCount === totalToLoad) {
+                        if (characters.length === 0) {
+                            loadingText.innerText = "ERROR LOADING MODELS";
+                            loadingText.classList.add('text-red-500');
+                        } else {
+                            loadingText.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+        }
+
+        function onWindowResize() {
+            if (!container) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            
+            // Update all animation mixers
+            mixers.forEach(mixer => {
+                mixer.update(delta);
+            });
+
+            // Subtle camera sway for cinematic feel
+            const time = clock.getElapsedTime();
+            camera.position.x = Math.sin(time * 0.1) * 10;
+            camera.position.y = 30 + Math.sin(time * 0.15) * 2;
+            camera.lookAt(0, 40, 0);
+            
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>AK-47 Viewer</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #111; }
+    </style>
+</head>
+<body>
+
+<script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.module.js";
+    import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.150.0/examples/jsm/controls/OrbitControls.js";
+    import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.150.0/examples/jsm/loaders/GLTFLoader.js";
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.2);
+    scene.add(hemi);
+
+    const dir = new THREE.DirectionalLight(0xffffff, 1);
+    dir.position.set(5, 10, 5);
+    scene.add(dir);
+
+    const texLoader = new THREE.TextureLoader();
+    const colorTex = texLoader.load("ak47_color.png");
+    colorTex.colorSpace = THREE.SRGBColorSpace;
+
+    const normalTex = texLoader.load("ak47_normal.png");
+
+    const loader = new GLTFLoader();
+    loader.load("ak47.glb", (gltf) => {
+        const model = gltf.scene;
+
+        model.traverse((obj) => {
+            if (obj.isMesh) {
+                obj.material = new THREE.MeshStandardMaterial({
+                    map: colorTex,
+                    normalMap: normalTex,
+                    metalness: 0.4,
+                    roughness: 0.5
+                });
+            }
+        });
+
+        scene.add(model);
+
+        // Sentrer og juster kamera
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+
+        model.position.sub(center);
+
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const camZ = maxDim * 1.8;
+
+        camera.position.set(0, maxDim * 0.3, camZ);
+        camera.lookAt(0, 0, 0);
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener("resize", () => {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1076 @@
+  transition: opacity 0.3s ease;
+  z-index: 200;
+  }
+
+  /* ============================================
+   VIGNETTE EFFECTS
+   ============================================ */
+  #vignette-impact-flash,
+  #vignette-damage-pulse,
+  #vignette-critical {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+  }
+
+  #vignette-impact-flash {
+      background: radial-gradient(ellipse at center,
+              transparent 20%,
+              rgba(255, 0, 0, 0.4) 50%,
+              rgba(255, 0, 0, 0.8) 100%);
+      z-index: 90;
+  }
+
+  #vignette-damage-pulse {
+      z-index: 89;
+  }
+
+  #vignette-damage-pulse.pulsing {
+      animation: vignettePulse 0.15s ease-out;
+  }
+
+  @keyframes vignettePulse {
+      0% {
+          transform: scale(1);
+      }
+
+      50% {
+          transform: scale(1.05);
+      }
+
+      100% {
+          transform: scale(1);
+      }
+  }
+
+  #vignette-critical {
+      background: radial-gradient(ellipse at center,
+              transparent 30%,
+              rgba(255, 0, 0, 0.3) 60%,
+              rgba(255, 0, 0, 0.6) 100%);
+      z-index: 88;
+  }
+
+  #vignette-critical.pulsing {
+      animation: criticalPulse 1s ease-in-out infinite;
+  }
+
+  @keyframes criticalPulse {
+
+      0%,
+      100% {
+          opacity: 0.8;
+      }
+
+      50% {
+          opacity: 0.4;
+      }
+  }
+
+  /* ============================================
+   DAMAGE INDICATORS
+   ============================================ */
+  #damage-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 300px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 85;
+      transition: opacity 0.1s ease-out;
+  }
+
+  #damage-overlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+  }
+
+  .damage-indicator {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+  }
+
+  #damage-indicator-top {
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%) rotate(0deg);
+  }
+
+  #damage-indicator-bottom {
+      bottom: 15%;
+      left: 50%;
+      transform: translateX(-50%) rotate(180deg);
+  }
+
+  #damage-indicator-left {
+      left: 15%;
+      top: 50%;
+      transform: translateY(-50%) rotate(-90deg);
+  }
+
+  #damage-indicator-right {
+      right: 15%;
+      top: 50%;
+      transform: translateY(-50%) rotate(90deg);
+  }
+
+  .damage-indicator img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 5px red);
+  }
+
+  /* ============================================
+   MUZZLE FLASH & EFFECTS OVERLAYS
+   ============================================ */
+  #muzzle-flash-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 200px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 80;
+  }
+
+  #muzzle-flash-overlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+  }
+
+  #explosion-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 81;
+  }
+
+  #explosion-overlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+  }
+
+  /* ============================================
+   SPRINT SPEED LINES OVERLAY
+   ============================================ */
+  #sprint-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 75;
+      transition: opacity 0.3s ease;
+      overflow: hidden;
+  }
+
+  #sprint-overlay.active {
+      opacity: 1;
+  }
+
+  .speed-line {
+      position: absolute;
+      background: linear-gradient(to bottom,
+              transparent 0%,
+              rgba(255, 255, 255, 0.1) 20%,
+              rgba(255, 255, 255, 0.3) 50%,
+              rgba(255, 255, 255, 0.1) 80%,
+              transparent 100%);
+      width: 2px;
+      height: 100%;
+      animation: speedLineMove 0.4s linear infinite;
+  }
+
+  .speed-line-1 {
+      left: 5%;
+      animation-delay: 0s;
+  }
+
+  .speed-line-2 {
+      left: 10%;
+      animation-delay: 0.1s;
+      opacity: 0.7;
+  }
+
+  .speed-line-3 {
+      right: 10%;
+      animation-delay: 0.15s;
+      opacity: 0.7;
+  }
+
+  .speed-line-4 {
+      right: 5%;
+      animation-delay: 0.05s;
+  }
+
+  @keyframes speedLineMove {
+      0% {
+          transform: translateY(-100%);
+          opacity: 0;
+      }
+
+      20% {
+          opacity: 1;
+      }
+
+      80% {
+          opacity: 1;
+      }
+
+      100% {
+          transform: translateY(100%);
+          opacity: 0;
+      }
+  }
+
+  /* Sprint vignette effect */
+  #sprint-overlay::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center,
+              transparent 50%,
+              rgba(0, 0, 0, 0.15) 100%);
+  }
+
+  #hit-impact-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 150px;
+      height: 150px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 82;
+  }
+
+  #hit-impact-overlay img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+  }
+
+  /* ============================================
+   TIER BADGES
+   ============================================ */
+  #tier-badges {
+      position: absolute;
+      bottom: 150px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+  }
+
+  .tier-badge {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      filter: grayscale(1) opacity(0.3);
+      transition: all 0.3s ease;
+  }
+
+  .tier-badge.active {
+      filter: grayscale(0) opacity(1);
+      animation: badgeUnlock 0.5s ease-out;
+  }
+
+  @keyframes badgeUnlock {
+      0% {
+          transform: scale(0) rotate(-180deg);
+      }
+
+      50% {
+          transform: scale(1.3) rotate(10deg);
+      }
+
+      100% {
+          transform: scale(1) rotate(0deg);
+      }
+  }
+
+  /* ============================================
+   SELECTION INDICATORS
+   ============================================ */
+  #selection-indicators {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100px;
+      height: 100px;
+      transform: translate(-50%, -50%);
+  }
+
+  .selection-tl,
+  .selection-tr,
+  .selection-bl,
+  .selection-br {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+  }
+
+  .selection-tl {
+      top: 0;
+      left: 0;
+  }
+
+  .selection-tr {
+      top: 0;
+      right: 0;
+      transform: rotate(90deg);
+  }
+
+  .selection-bl {
+      bottom: 0;
+      left: 0;
+      transform: rotate(-90deg);
+  }
+
+  .selection-br {
+      bottom: 0;
+      right: 0;
+      transform: rotate(180deg);
+  }
+
+  /* ============================================
+   VICTORY DECORATIONS
+   ============================================ */
+  #victory-decorations {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+  }
+
+  .victory-top {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-width: 800px;
+  }
+
+  .victory-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-width: 800px;
+  }
+
+  /* ============================================
+   SKULL DEATH ANIMATION
+   ============================================ */
+  #skull-death-anim {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 300;
+  }
+
+  .skull-sprite {
+      width: 128px;
+      height: 128px;
+      background-size: cover;
+  }
+
+  /* ============================================
+   PAUSE MENU
+   ============================================ */
+  #pause-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      pointer-events: auto;
+  }
+
+  #pause-menu .menu-content,
+  #settings-menu .menu-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 40px;
+      background: rgba(20, 20, 30, 0.95);
+      border: 2px solid rgba(77, 171, 247, 0.5);
+      border-radius: 12px;
+      box-shadow: 0 0 40px rgba(77, 171, 247, 0.3);
+  }
+
+  #pause-menu h1,
+  #settings-menu h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 48px;
+      font-weight: 900;
+      color: #4dabf7;
+      text-shadow: 0 0 20px rgba(77, 171, 247, 0.8);
+      margin-bottom: 20px;
+  }
+
+  .menu-button {
+      width: 250px;
+      padding: 15px 30px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #fff;
+      background: linear-gradient(135deg, rgba(77, 171, 247, 0.3), rgba(77, 171, 247, 0.1));
+      border: 2px solid rgba(77, 171, 247, 0.6);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      pointer-events: auto;
+  }
+
+  .menu-button:hover {
+      background: linear-gradient(135deg, rgba(77, 171, 247, 0.5), rgba(77, 171, 247, 0.2));
+      border-color: #4dabf7;
+      box-shadow: 0 0 20px rgba(77, 171, 247, 0.5);
+      transform: scale(1.05);
+  }
+
+  /* ============================================
+   SETTINGS MENU
+   ============================================ */
+  #settings-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      pointer-events: auto;
+  }
+
+  .setting-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      padding: 10px 0;
+  }
+
+  .setting-row label {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      min-width: 120px;
+  }
+
+  .setting-row input[type="range"] {
+      flex: 1;
+      height: 6px;
+      background: rgba(77, 171, 247, 0.3);
+      border-radius: 3px;
+      appearance: none;
+      cursor: pointer;
+      pointer-events: auto;
+  }
+
+  .setting-row input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #4dabf7;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(77, 171, 247, 0.8);
+  }
+
+  .setting-row span {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      color: #4dabf7;
+      min-width: 60px;
+      text-align: right;
+  }
+
+  /* ============================================
+   GAME OVER SCREEN
+   ============================================ */
+  #game-over {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2500;
+      pointer-events: auto;
+  }
+
+  .game-over-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      padding: 50px;
+      background: linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.95));
+      border: 2px solid rgba(255, 107, 107, 0.5);
+      border-radius: 16px;
+      box-shadow: 0 0 60px rgba(255, 107, 107, 0.3);
+  }
+
+  .game-over-content h1 {
+      font-family: 'Bebas Neue', 'Orbitron', sans-serif;
+      font-size: 72px;
+      font-weight: 900;
+      color: #ff6b6b;
+      text-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
+      letter-spacing: 8px;
+  }
+
+  .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+  }
+
+  .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 6px;
+  }
+
+  .stat-row span:first-child {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.7);
+  }
+
+  .stat-row span:last-child {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffd43b;
+  }
+
+  /* ============================================
+   SCOREBOARD (Multiplayer)
+   ============================================ */
+  #scoreboard {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid rgba(77, 171, 247, 0.5);
+      border-radius: 12px;
+      padding: 30px;
+      min-width: 500px;
+      z-index: 1500;
+      pointer-events: auto;
+  }
+
+  .scoreboard-content h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 28px;
+      color: #4dabf7;
+      text-align: center;
+      margin-bottom: 20px;
+  }
+
+  #scoreboard table {
+      width: 100%;
+      border-collapse: collapse;
+  }
+
+  #scoreboard th {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      padding: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  #scoreboard td {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 18px;
+      color: #fff;
+      text-align: center;
+      padding: 12px 10px;
+  }
+
+  #scoreboard tr.local-player td {
+      color: #ffd43b;
+      font-weight: 700;
+  }
+
+  /* ============================================
+   START SCREEN
+   ============================================ */
+  #start-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1800;
+  }
+
+  .start-content h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 36px;
+      color: #fff;
+      animation: startPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes startPulse {
+
+      0%,
+      100% {
+          opacity: 1;
+      }
+
+      50% {
+          opacity: 0.5;
+      }
+  }
+
+  /* ============================================
+   LEGACY HUD COMPATIBILITY
+   ============================================ */
+  #hudFragList {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 40;
+  }
+
+  #fragList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+  }
+
+  #fragList li {
+      padding: 5px 10px;
+      background: rgba(0, 0, 0, 0.6);
+      margin-bottom: 3px;
+      border-radius: 4px;
+      font-size: 14px;
+  }
+
+  /* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+  @media (max-width: 1200px) {
+      :root {
+          --hud-scale: 0.9;
+      }
+
+      #status-bars {
+          left: 20px;
+          bottom: 20px;
+      }
+
+      .bar-container {
+          width: 180px;
+      }
+
+      #weapon-info {
+          right: 20px;
+          bottom: 20px;
+      }
+  }
+
+  @media (max-width: 768px) {
+      :root {
+          --hud-scale: 0.8;
+      }
+
+      #status-bars {
+          left: 10px;
+          bottom: 15px;
+      }
+
+      .bar-container {
+          width: 150px;
+      }
+
+      #weapon-info {
+          right: 10px;
+          bottom: 15px;
+      }
+
+      #ammo-display {
+          font-size: 20px;
+      }
+
+      .wave-text {
+          font-size: 18px;
+      }
+  }
+
+  /* ============================================
+   AAA POLISH EFFECTS
+   ============================================ */
+
+  /* Weapon Switching Animation */
+  #weapon-name {
+      transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+  }
+
+  #weapon-name.switching {
+      transform: translateY(-10px);
+      opacity: 0;
+  }
+
+  /* Ammo Flash on Low */
+  @keyframes ammoWarning {
+
+      0%,
+      100% {
+          color: #ffd43b;
+          text-shadow: 0 0 10px rgba(255, 212, 59, 0.5);
+      }
+
+      50% {
+          color: #ff6b6b;
+          text-shadow: 0 0 15px rgba(255, 107, 107, 0.8);
+      }
+  }
+
+  #ammo-display.low {
+      animation: ammoWarning 0.8s ease-in-out infinite;
+  }
+
+  /* Smooth Crosshair Transitions */
+  #cross-top,
+  #cross-bottom,
+  #cross-left,
+  #cross-right {
+      transition: transform 0.08s ease-out, background-color 0.1s ease;
+  }
+
+  /* Hit Feedback Glow */
+  #crosshair.hit #cross-top,
+  #crosshair.hit #cross-bottom,
+  #crosshair.hit #cross-left,
+  #crosshair.hit #cross-right {
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+  }
+
+  #crosshair.kill #cross-top,
+  #crosshair.kill #cross-bottom,
+  #crosshair.kill #cross-left,
+  #crosshair.kill #cross-right {
+      box-shadow: 0 0 12px rgba(255, 107, 107, 1);
+      animation: killPulse 0.15s ease-out;
+  }
+
+  @keyframes killPulse {
+      0% {
+          transform: scale(1.5);
+      }
+
+      100% {
+          transform: scale(1);
+      }
+  }
+
+  /* Damage Number Floaters (for future implementation) */
+  .damage-number {
+      position: absolute;
+      font-family: 'Bebas Neue', 'Orbitron', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+      animation: damageFloat 1s ease-out forwards;
+      z-index: 150;
+  }
+
+  .damage-number.headshot {
+      color: #ffd43b;
+      font-size: 32px;
+  }
+
+  .damage-number.critical {
+      color: #ff6b6b;
+      font-size: 28px;
+  }
+
+  @keyframes damageFloat {
+      0% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+
+      50% {
+          opacity: 1;
+          transform: translateY(-30px) scale(1.1);
+      }
+
+      100% {
+          opacity: 0;
+          transform: translateY(-60px) scale(0.8);
+      }
+  }
+
+  /* Score Pop Animation */
+  @keyframes scoreIncrease {
+      0% {
+          transform: translate(-50%, -50%) scale(1);
+          color: #ffd43b;
+      }
+
+      30% {
+          transform: translate(-50%, -50%) scale(1.4);
+          color: #fff;
+          text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+      }
+
+      100% {
+          transform: translate(-50%, -50%) scale(1);
+          color: #ffd43b;
+          text-shadow: 0 0 15px rgba(255, 212, 59, 0.5);
+      }
+  }
+
+  #score-display.pop {
+      animation: scoreIncrease 0.4s ease-out;
+  }
+
+  /* Objective Pulse */
+  #objective-label.active {
+      animation: objectivePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes objectivePulse {
+
+      0%,
+      100% {
+          transform: translateX(-50%) scale(1);
+          opacity: 0.9;
+      }
+
+      50% {
+          transform: translateX(-50%) scale(1.02);
+          opacity: 1;
+      }
+  }
+
+  /* Subtle HUD Scan Line Effect (optional) */
+  #hud::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(0deg,
+              transparent,
+              transparent 2px,
+              rgba(0, 255, 255, 0.01) 2px,
+              rgba(0, 255, 255, 0.01) 4px);
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.3;
+  }
+
+  /* Minimap Glow */
+  #minimap-container {
+      box-shadow: 0 0 20px rgba(0, 100, 255, 0.3);
+  }
+
+  /* Loading Indicator for Respawn */
+  .respawn-timer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 48px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+      z-index: 200;
+  }
+
+  .respawn-timer::after {
+      content: '';
+      display: block;
+      width: 100px;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #4dabf7, transparent);
+      margin: 20px auto 0;
+      animation: respawnBar 1s linear infinite;
+  }
+
+  @keyframes respawnBar {
+      0% {
+          transform: scaleX(0);
+      }
+
+      100% {
+          transform: scaleX(1);
+      }
+  }
+
+  /* Focus Indicator when Aiming */
+  #hud.aiming #crosshair {
+      filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+  }
+
+  #hud.aiming #cross-center {
+      transform: translate(-50%, -50%) scale(0.8);
+  }
+
+  /* Sprint Effect on HUD */
+  #hud.sprinting::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center,
+              transparent 60%,
+              rgba(0, 0, 0, 0.1) 100%);
+      pointer-events: none;
+      animation: sprintVignette 0.5s ease-out;
+  }
+
+  @keyframes sprintVignette {
+      0% {
+          opacity: 0;
+      }
+
+      100% {
+          opacity: 1;
+      }
+  }
+
+  /* Kill Confirmed Banner */
+  .kill-banner {
+      position: absolute;
+      top: 25%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 15px 40px;
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.9), rgba(255, 50, 50, 0.8));
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      border-radius: 8px;
+      font-family: 'Bebas Neue', 'Orbitron', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 30px rgba(255, 107, 107, 0.6);
+      animation: killBannerIn 0.3s ease-out;
+      z-index: 250;
+  }
+
+  @keyframes killBannerIn {
+      0% {
+          transform: translateX(-50%) scale(0.5);
+          opacity: 0;
+      }
+
+      70% {
+          transform: translateX(-50%) scale(1.1);
+      }
+
+      100% {
+          transform: translateX(-50%) scale(1);
+          opacity: 1;
+      }
+  }
+
+  /* Headshot Special Effect */
+  .headshot-banner {
+      background: linear-gradient(135deg, rgba(255, 212, 59, 0.9), rgba(255, 180, 0, 0.8));
+      box-shadow: 0 0 30px rgba(255, 212, 59, 0.6);
+  }
+
+  /* Screen Edge Warning for Zone */
+  .zone-warning {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center,
+              transparent 50%,
+              rgba(255, 0, 0, 0.3) 100%);
+      animation: zoneWarningPulse 1s ease-in-out infinite;
+      z-index: 85;
+  }
+
+  @keyframes zoneWarningPulse {
+
+      0%,
+      100% {
+          opacity: 0.5;
+      }
+
+      50% {
+          opacity: 0.8;
+      }
+  }

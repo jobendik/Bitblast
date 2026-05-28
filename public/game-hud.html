@@ -1,0 +1,70 @@
+<!-- Game HUD Elements -->
+<!-- Add this inside <body> tag after existing content -->
+
+<link rel="stylesheet" href="style/game-hud.css">
+
+<div id="game-hud">
+  <!-- Health & Armor -->
+  <div id="health-container">
+    <div id="health-bar" class="bar" style="width: 100%"></div>
+    <span id="health-text">100</span>
+  </div>
+  <div id="armor-container">
+    <div id="armor-bar" class="bar" style="width: 0%"></div>
+    <span id="armor-text">0</span>
+  </div>
+  
+  <!-- Ammo Display -->
+  <div id="ammo-container">
+    <span id="ammo-current">30</span>
+    <span id="ammo-reserve">/ 120</span>
+  </div>
+  <span id="weapon-name">M4</span>
+  
+  <!-- Crosshair -->
+  <div id="crosshair">
+    <div id="crosshair-top"></div>
+    <div id="crosshair-bottom"></div>
+    <div id="crosshair-left"></div>
+    <div id="crosshair-right"></div>
+    <div id="crosshair-center"></div>
+  </div>
+  
+  <!-- Sniper Scope Overlay -->
+  <div id="sniper-scope"></div>
+  
+  <!-- Hit Feedback -->
+  <div id="hitmarker"></div>
+  <div id="kill-icon">☠</div>
+  
+  <!-- Damage Vignette -->
+  <div id="damage-vignette"></div>
+  
+  <!-- Killfeed -->
+  <div id="killfeed"></div>
+  
+  <!-- Reload Indicator -->
+  <div id="reload-indicator">RELOADING</div>
+  
+  <!-- Kill Streak Display -->
+  <div id="kill-streak"></div>
+  
+  <!-- Multi-kill Display -->
+  <div id="multi-kill"></div>
+  
+  <!-- Message Display -->
+  <div id="message-display"></div>
+  
+  <!-- Score Display (for team modes) -->
+  <div id="score-container" style="display: none;">
+    <div class="team-score blue">
+      <span id="blue-score">0</span>
+    </div>
+    <div class="team-score red">
+      <span id="red-score">0</span>
+    </div>
+  </div>
+  
+  <!-- Game Timer -->
+  <div id="game-timer" style="display: none;">5:00</div>
+</div>

@@ -1,0 +1,59 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - trueMultiplayer
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euxo pipefail
+
+            echo "=== Environment info ==="
+            whoami
+            pwd
+            echo "PATH=$PATH"
+
+            # Load NVM / Node if installed this way
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+            echo "Node version:"
+            node -v || true
+            npm -v || true
+            pm2 -v || true
+
+            echo "=== Go to project directory ==="
+            cd /var/www/drift-src
+
+            echo "=== Pulling latest code ==="
+            git fetch origin
+            git reset --hard origin/trueMultiplayer
+
+            echo "=== Installing dependencies ==="
+            npm ci
+
+            echo "=== Building frontend ==="
+            npm run build
+
+            echo "=== Deploying frontend ==="
+            sudo rm -rf /var/www/rift-new/*
+            sudo cp -a dist/* /var/www/rift-new/
+            sudo chown -R www-data:www-data /var/www/rift-new
+
+            echo "=== Restarting backend ==="
+            sudo pm2 restart driftbackend --update-env
+            sudo pm2 save
+
+            echo "=== Deployment complete ==="
+            pm2 list

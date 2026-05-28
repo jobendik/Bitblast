@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  stats     Stats?
+  currency  Currency?
+  
+  // Social
+  friends        Friendship[] @relation("UserFriends")
+  friendOf       Friendship[] @relation("FriendUser")
+  sentRequests   FriendRequest[] @relation("Sender")
+  receivedRequests FriendRequest[] @relation("Receiver")
+  
+  // Inventory
+  inventory      InventoryItem[]
+}
+
+model InventoryItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  
+  itemId    String
+  type      String   // "WEAPON", "SKIN", "CONSUMABLE"
+  quantity  Int      @default(1)
+  acquiredAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+model Stats {
+  id        Int     @id @default(autoincrement())
+  userId    Int     @unique
+  user      User    @relation(fields: [userId], references: [id])
+  
+  level     Int     @default(1)
+  xp        Int     @default(0)
+  nextLevelXp Int   @default(1000)
+  
+  matches   Int     @default(0)
+  wins      Int     @default(0)
+  kills     Int     @default(0)
+  deaths    Int     @default(0)
+  headshots Int     @default(0)
+}
+
+model Currency {
+  id            Int     @id @default(autoincrement())
+  userId        Int     @unique
+  user          User    @relation(fields: [userId], references: [id])
+  
+  riftTokens    Int     @default(0)
+  plasmaCredits Int     @default(0)
+}
+
+model Friendship {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  friendId  Int
+  createdAt DateTime @default(now())
+
+  user      User     @relation("UserFriends", fields: [userId], references: [id])
+  friend    User     @relation("FriendUser", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+}
+
+model FriendRequest {
+  id        Int      @id @default(autoincrement())
+  senderId  Int
+  receiverId Int
+  status    String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt DateTime @default(now())
+
+  sender    User     @relation("Sender", fields: [senderId], references: [id])
+  receiver  User     @relation("Receiver", fields: [receiverId], references: [id])
+
+  @@unique([senderId, receiverId])
+}

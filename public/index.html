@@ -1,0 +1,126 @@
+<html lang="en">
+
+<head>
+	<title>BITBLAST</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="./style/main.css?v=2">
+	<link rel="stylesheet" type="text/css" href="./style/game-hud.css">
+	<link rel="stylesheet" type="text/css" href="./style/game-lobby.css">
+	<link rel="shortcut icon" type="image/x-icon" href="./assets/images/bitblast_logo.png">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@400;700&display=swap"
+		rel="stylesheet">
+</head>
+
+<body>
+
+	<section id="startScreen">
+		<div class="logo">BITBLAST</div>
+		<button id="start" class="breach-button">Breach</button>
+	</section>
+
+	<section id="loadingScreen">
+		<div class="loading-content">
+			<div class="loading-logo">BITBLAST</div>
+			<div class="spinner">
+				<div class="rect1"></div>
+				<div class="rect2"></div>
+				<div class="rect3"></div>
+				<div class="rect4"></div>
+				<div class="rect5"></div>
+			</div>
+		</div>
+	</section>
+
+	<section id="hudAmmo" class="uiContainer hidden">
+		<div>
+			<span id="roundsLeft"></span>
+			<span>|</span>
+			<span id="ammo"></span>
+		</div>
+	</section>
+
+	<section id="hudHealth" class="uiContainer hidden">
+		<div>
+			<span id="health"></span>
+		</div>
+	</section>
+
+	<section id="hudFragList" class="uiContainer hidden">
+		<div>
+			<ul id="fragList"></ul>
+		</div>
+	</section>
+
+	<!-- Game HUD Elements -->
+	<div id="game-hud">
+		<!-- Health Bar -->
+		<div id="health-container">
+			<div id="health-icon">❤</div>
+			<div id="health-bar-wrapper">
+				<div id="health-bar"></div>
+			</div>
+			<span id="health-text">100</span>
+		</div>
+
+		<!-- Armor Bar -->
+		<div id="armor-container">
+			<div id="armor-icon">🛡</div>
+			<div id="armor-bar-wrapper">
+				<div id="armor-bar"></div>
+			</div>
+			<span id="armor-text">0</span>
+		</div>
+
+		<!-- Ammo Display -->
+		<div id="ammo-container">
+			<span id="ammo-current">30</span>
+			<span id="ammo-separator">/</span>
+			<span id="ammo-reserve">120</span>
+		</div>
+		<div id="weapon-name">M4</div>
+
+		<!-- Crosshair -->
+		<div id="crosshair">
+			<div id="crosshair-top"></div>
+			<div id="crosshair-bottom"></div>
+			<div id="crosshair-left"></div>
+			<div id="crosshair-right"></div>
+			<div id="crosshair-center"></div>
+			<div id="crosshair-circle"></div>
+		</div>
+
+		<!-- Hitmarker -->
+		<div id="hitmarker"></div>
+
+		<!-- Kill Icon -->
+		<div id="kill-icon">☠</div>
+
+		<!-- Damage Vignette -->
+		<div id="damage-vignette"></div>
+
+		<!-- Damage Direction Indicators -->
+		<div id="damage-indicator-top" class="damage-indicator"></div>
+		<div id="damage-indicator-bottom" class="damage-indicator"></div>
+		<div id="damage-indicator-left" class="damage-indicator"></div>
+		<div id="damage-indicator-right" class="damage-indicator"></div>
+
+		<!-- Killfeed -->
+		<div id="killfeed"></div>
+
+		<!-- Reload Indicator -->
+		<div id="reload-indicator">RELOADING...</div>
+
+		<!-- Wave/Score Display (for wave survival) -->
+		<div id="wave-display"></div>
+		<div id="score-display">0</div>
+	</div>
+
+	<!-- Lobby Container (for multiplayer) -->
+	<div id="lobby-container" class="hidden"></div>
+
+	<script type="module" src="../src/main.ts"></script>
+</body>
+
+</html>

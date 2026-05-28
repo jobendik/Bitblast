@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>BITBLAST</title>
+	<meta charset="utf-8">
+	<!-- Enhanced viewport for mobile devices -->
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<!-- iOS specific meta tags for fullscreen web app -->
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="BITBLAST">
+	<!-- Android/Chrome specific meta tags -->
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="theme-color" content="#1a1a2e">
+	<!-- Prevent phone number detection -->
+	<meta name="format-detection" content="telephone=no">
+
+	<link rel="stylesheet" type="text/css" href="/style/main.css?v=3">
+	<link rel="stylesheet" type="text/css" href="/style/game-hud.css?v=3">
+	<link rel="stylesheet" type="text/css" href="/style/game-lobby.css">
+	<link rel="stylesheet" type="text/css" href="/style/lobby.css">
+	<link rel="stylesheet" type="text/css" href="/style/mobile.css?v=1">
+	<link rel="stylesheet" type="text/css" href="/style/lobby-mobile.css">
+	<link rel="stylesheet" type="text/css" href="/src/ui/game-end-screen.css">
+	<link rel="shortcut icon" type="image/x-icon" href="/assets/images/bitblast_logo.png">
+	<!-- Apple touch icons -->
+	<link rel="apple-touch-icon" href="/assets/images/bitblast_logo.png">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@400;700;900&family=Bebas+Neue&family=Teko:wght@300;400;500;600;700&display=swap"
+		rel="stylesheet">
+</head>
+
+<body>
+
+	<!-- Start screen removed - going directly to lobby -->
+
+	<section id="loadingScreen">
+		<div class="loading-content">
+			<div class="loading-logo">BITBLAST</div>
+			<div class="spinner">
+				<div class="rect1"></div>
+				<div class="rect2"></div>
+				<div class="rect3"></div>
+				<div class="rect4"></div>
+				<div class="rect5"></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Main HUD Container - Hidden by default, shown when game starts -->
+	<div id="hud" style="display: none;">
+
+
+		<!-- Hit Marker (Center) -->
+		<div id="hit-marker"></div>
+
+		<!-- Leaderboard Area (Top Left) -->
+		<div id="leaderboard-area">
+			<div id="leaderboard">
+				<!-- Player entries will be dynamically inserted here -->
+			</div>
+
+			<!-- Stats Panel (Below Leaderboard) -->
+			<div id="stats-panel" class="stats-panel">
+				<div class="stat-block">
+					<div class="hud-content">
+						<div class="stat-label">Kills</div>
+						<div class="stat-value" id="stat-kills">0</div>
+					</div>
+				</div>
+				<div class="stat-block">
+					<div class="hud-content">
+						<div class="stat-label">Headshots</div>
+						<div class="stat-value stat-headshots" id="stat-hs">0</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Chat Area (Above Vitals) -->
+		<div id="chat-container" class="chat-container">
+			<div id="chat-feed" class="chat-feed">
+				<!-- Chat messages will be injected here -->
+			</div>
+			<div class="hud-panel chat-input-wrapper">
+				<input type="text" id="game-chat-input" class="hud-content chat-input"
+					placeholder="Press Enter to chat..." autocomplete="off">
+			</div>
+		</div>
+
+		<!-- Killfeed (Top Right) -->
+		<div id="killfeed"></div>
+
+		<!-- Legacy UIManager Elements (for compatibility) -->
+		<div id="hudFragList" class="hidden">
+			<div id="fragList"></div>
+		</div>
+		<div id="hudAmmo" style="display: none;"></div>
+		<div id="hudHealth" style="display: none;"></div>
+		<div id="roundsLeft" style="display: none;"></div>
+		<div id="ammo" style="display: none;"></div>
+		<div id="health" style="display: none;"></div>
+
+		<!-- Vitals Area (Bottom Left) -->
+		<div id="vitals-area">
+			<!-- HP Text Display -->
+			<div class="vitals-text hud-content">
+				<span class="hp-value" id="hp-text">100</span>
+				<span class="hp-label">HP</span>
+			</div>
+
+			<!-- Shield/Armor Bar (Segmented) -->
+			<div class="hud-panel shield-bar-container" id="shield-container">
+				<div class="shield-segment active"></div>
+				<div class="shield-segment active"></div>
+				<div class="shield-segment active"></div>
+				<div class="shield-segment active"></div>
+				<div class="shield-segment"></div>
+			</div>
+
+			<!-- Health Bar (Solid) -->
+			<div class="hud-panel hp-bar-container">
+				<div id="hp-bar" class="hp-fill"></div>
+			</div>
+
+			<!-- Stamina Bar -->
+			<div class="stamina-bar-container">
+				<div id="stamina-bar" class="stamina-fill"></div>
+			</div>
+		</div>
+
+		<!-- Weapon & Ammo Area (Bottom Right) -->
+		<div id="weapon-area">
+			<div class="ammo-container">
+				<div class="ammo-content-wrapper">
+					<div class="weapon-name-display" id="weapon-name">AK-47</div>
+					<div class="fire-mode" id="fire-mode">AUTOMATIC</div>
+
+					<div class="ammo-display">
+						<div class="ammo-current" id="ammo-count">30</div>
+						<div class="ammo-reserve">/ <span id="ammo-reserve">90</span></div>
+					</div>
+
+					<div class="ammo-bar-track">
+						<div class="ammo-bar-fill" id="ammo-bar"></div>
+					</div>
+
+					<!-- Reload Warning -->
+					<div id="reload-indicator" class="reload-warning">RELOAD</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Crosshair (Center) -->
+		<div id="crosshair">
+			<div id="cross-top"></div>
+			<div id="cross-bottom"></div>
+			<div id="cross-left"></div>
+			<div id="cross-right"></div>
+			<div id="cross-center"></div>
+			<div id="crosshair-circle"></div>
+		</div>
+
+		<!-- Sniper Scope Overlay -->
+		<div id="sniper-scope">
+			<div class="scope-line-h"></div>
+			<div class="scope-line-v"></div>
+		</div>
+
+		<!-- Hitmarker (Center) -->
+		<div id="hitmarker">
+			<img src="/assets/images/ui/Hitmarker.png_b137b09c.png" alt="Hit">
+		</div>
+
+		<!-- Kill & Headshot Icons (Center) -->
+		<div id="kill-icon">
+			<img src="/assets/images/ui/Kill-Icon.png_91675cde.png" alt="Kill">
+		</div>
+		<div id="headshot-icon">
+			<img src="/assets/images/ui/Headshot-Icon.png_ca1ab804.png" alt="Headshot">
+		</div>
+
+		<!-- Death Icon (shown on kill) -->
+		<div id="death-icon">
+			<img src="/assets/images/ui/Death-Icon.png_76e0217b.png" alt="Death">
+		</div>
+
+		<!-- Wave/Score Display (Top Center) -->
+		<div id="wave-display">
+			<img src="/assets/images/ui/Rectangle-Skew.png_8cb3987e.png" alt="" class="wave-bg">
+			<span class="wave-text">WAVE 1</span>
+		</div>
+
+		<!-- Game Timer (Top Center) -->
+		<div id="game-timer" style="display: none;">5:00</div>
+
+		<!-- Objective Label (Top) -->
+		<div id="objective-label">
+			<img src="/assets/images/ui/Objective-Label.png_ea20a145.png" alt="" class="objective-bg">
+			<span class="objective-text">ELIMINATE ALL HOSTILES</span>
+		</div>
+
+		<!-- Enemies Remaining (Top) -->
+		<div id="enemies-remaining" style="display: none;">
+			<span class="enemies-count">0</span>
+		</div>
+
+		<!-- Score Display -->
+		<div id="score-display" style="display: none;">0</div>
+
+		<!-- Multi-Kill & Streak Messages (Center Right) -->
+		<div id="combat-feedback">
+			<div id="multi-kill">
+				<img src="/assets/images/ui/Kill-Drilled.png_34c2515b.png" alt="" class="kill-effect">
+				<span class="multikill-text"></span>
+			</div>
+			<div id="kill-streak">
+				<span class="streak-text"></span>
+			</div>
+		</div>
+
+		<!-- Powerup Indicator (Top Left) -->
+		<div id="powerup-indicator">
+			<img src="/assets/images/ui/Notification-Mark.png_78660ebf.png" alt="" class="powerup-bg">
+			<span class="powerup-text"></span>
+		</div>
+
+		<!-- Message Display (Center) -->
+		<div id="message-display"></div>
+
+		<!-- Vignette Effects -->
+		<div id="vignette-impact-flash"></div>
+		<div id="vignette-damage-pulse"></div>
+		<div id="vignette-critical"></div>
+
+		<!-- Damage Direction Indicators (All 4 directions) -->
+		<div id="damage-overlay">
+			<img src="/assets/images/ui/Damage-Indictator.png_78ece5da.png" alt="Damage">
+		</div>
+		<div id="damage-indicator-top" class="damage-indicator">
+			<img src="/assets/images/ui/Damage-Indictator.png_78ece5da.png" alt="">
+		</div>
+		<div id="damage-indicator-bottom" class="damage-indicator">
+			<img src="/assets/images/ui/Damage-Indictator.png_78ece5da.png" alt="">
+		</div>
+		<div id="damage-indicator-left" class="damage-indicator">
+			<img src="/assets/images/ui/Damage-Indictator.png_78ece5da.png" alt="">
+		</div>
+		<div id="damage-indicator-right" class="damage-indicator">
+			<img src="/assets/images/ui/Damage-Indictator.png_78ece5da.png" alt="">
+		</div>
+
+		<!-- Muzzle Flash Overlay -->
+		<div id="muzzle-flash-overlay">
+			<img src="/assets/images/ui/muzzle.png_19188667.png" alt="">
+		</div>
+
+		<!-- Explosion Effect Overlay -->
+		<div id="explosion-overlay">
+			<img src="/assets/images/ui/Explosion.png_0d506ede.png" alt="">
+		</div>
+
+		<!-- Sprint Speed Lines Overlay -->
+		<div id="sprint-overlay">
+			<div class="speed-line speed-line-1"></div>
+			<div class="speed-line speed-line-2"></div>
+			<div class="speed-line speed-line-3"></div>
+			<div class="speed-line speed-line-4"></div>
+		</div>
+
+		<!-- Hit Impact Overlay (screen center flash) -->
+		<div id="hit-impact-overlay">
+			<img src="/assets/images/ui/Hit-Impact.png_3363db53.png" alt="">
+		</div>
+
+		<!-- Skull Death Animation -->
+		<div id="skull-death-anim" class="hidden">
+			<div class="skull-sprite"></div>
+		</div>
+
+		<!-- Selection/UI Elements -->
+		<div id="selection-indicators" class="hidden">
+			<img src="/assets/images/ui/Selection-Piece.png_5c011564.png" alt="" class="selection-tl">
+			<img src="/assets/images/ui/Selection-Piece.png_5c011564.png" alt="" class="selection-tr">
+			<img src="/assets/images/ui/Selection-Piece.png_5c011564.png" alt="" class="selection-bl">
+			<img src="/assets/images/ui/Selection-Piece.png_5c011564.png" alt="" class="selection-br">
+		</div>
+
+		<!-- Victory/Round End Decorations -->
+		<div id="victory-decorations" class="hidden">
+			<img src="/assets/images/ui/Victory-Top-Line.png_cb1d2f46.png" alt="" class="victory-top">
+			<img src="/assets/images/ui/Victory-Bottom-Line.png_f1e04174.png" alt="" class="victory-bottom">
+		</div>
+	</div>
+
+	<!-- Pause Menu -->
+	<div id="pause-menu" style="display: none;">
+		<div class="menu-content">
+			<h1>PAUSED</h1>
+			<button id="resume-btn" class="menu-button">Resume</button>
+			<button id="settings-btn" class="menu-button">Settings</button>
+			<button id="quit-btn" class="menu-button">Quit to Menu</button>
+		</div>
+	</div>
+
+	<!-- Settings Menu -->
+	<div id="settings-menu" style="display: none;">
+		<div class="menu-content">
+			<h1>SETTINGS</h1>
+			<div class="setting-row">
+				<label>Sensitivity:</label>
+				<input type="range" id="sensitivity-slider" min="0.0001" max="0.01" step="0.0001" value="0.002">
+				<span id="sensitivity-value">0.002</span>
+			</div>
+			<div class="setting-row">
+				<label>Volume:</label>
+				<input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
+				<span id="volume-value">50%</span>
+			</div>
+			<div class="setting-row">
+				<label>FOV:</label>
+				<input type="range" id="fov-slider" min="60" max="120" step="1" value="90">
+				<span id="fov-value">90</span>
+			</div>
+			<button id="settings-back-btn" class="menu-button">Back</button>
+		</div>
+	</div>
+
+	<!-- Game Over Screen -->
+	<div id="game-over" style="display: none;">
+		<div class="game-over-content">
+			<h1>GAME OVER</h1>
+			<div class="stats">
+				<div class="stat-row"><span>Score:</span><span id="final-score">0</span></div>
+				<div class="stat-row"><span>Waves:</span><span id="final-waves">0</span></div>
+				<div class="stat-row"><span>Kills:</span><span id="final-kills">0</span></div>
+				<div class="stat-row"><span>Accuracy:</span><span id="final-accuracy">0%</span></div>
+				<div class="stat-row"><span>Time:</span><span id="final-time">0:00</span></div>
+			</div>
+			<button id="restart-btn" class="menu-button">Restart</button>
+		</div>
+	</div>
+
+	<!-- Scoreboard (Multiplayer) -->
+	<div id="scoreboard" style="display: none;">
+		<div class="scoreboard-content">
+			<h2>SCOREBOARD</h2>
+			<table>
+				<thead>
+					<tr>
+						<th>Player</th>
+						<th>Kills</th>
+						<th>Deaths</th>
+						<th>Ping</th>
+					</tr>
+				</thead>
+				<tbody id="scoreboard-body"></tbody>
+			</table>
+		</div>
+	</div>
+
+	<!-- Start Screen Message Display -->
+	<div id="start-screen" style="display: none;">
+		<div class="start-content">
+			<h1>PRESS ANY KEY TO START</h1>
+		</div>
+	</div>
+
+	<!-- Lobby Container (for multiplayer) -->
+	<div id="lobby-container" class="hidden"></div>
+
+	<script type="module" src="./src/main.ts"></script>
+</body>
+
+</html>

@@ -1,0 +1,347 @@
+/* Game End Screen Styles - Unified AAR Dashboard */
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --primary-yellow: #e6b800;
+  --primary-yellow-dim: rgba(230, 184, 0, 0.15);
+  --primary-yellow-glow: rgba(230, 184, 0, 0.5);
+  --bg-glass: rgba(15, 15, 20, 0.92);
+  --bg-glass-light: rgba(255, 255, 255, 0.03);
+  --text-white: #ffffff;
+  --text-grey: #a0a0a0;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-accent: rgba(230, 184, 0, 0.8);
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #0f172a;
+  font-family: 'Rajdhani', sans-serif;
+  color: white;
+}
+
+/* --- BACKGROUND STYLES --- */
+#background-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* 1. Blurred Map Image with Slow Pan */
+.bg-image {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background-image: url('https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=2070&auto=format&fit=crop');
+  /* Sci-fi/Gaming Vibe */
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px) brightness(0.4);
+  animation: bgPan 60s ease-in-out infinite alternate;
+}
+
+@keyframes bgPan {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+
+  100% {
+    transform: scale(1.1) translate(-2%, -2%);
+  }
+}
+
+/* 2. Tech Grid Overlay */
+.tech-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.4) 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(6, 182, 212, 0.03) 1px, rgba(6, 182, 212, 0.03) 2px);
+  background-size: 100% 100%, 100% 4px;
+  pointer-events: none;
+}
+
+/* 3. Vignette */
+.vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, transparent 40%, #0f172a 100%);
+  pointer-events: none;
+}
+
+/* 4. CSS Particles */
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(234, 179, 8, 0.3);
+  /* Gold dust */
+  border-radius: 50%;
+  animation: floatUp linear infinite;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateY(-10vh) scale(1);
+    opacity: 0;
+  }
+}
+
+/* --- UI STYLES --- */
+
+/* Skew Utilities */
+.skew-x-20 {
+  transform: skewX(-20deg);
+}
+
+.unskew-x-20 {
+  transform: skewX(20deg);
+}
+
+.skew-box {
+  transform: skewX(-15deg);
+}
+
+.unskew-content {
+  transform: skewX(15deg);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+/* Row Animations - Zipper Effect */
+@keyframes rowSlideInLeft {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes rowSlideInRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.row-animate-left {
+  animation: rowSlideInLeft 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.row-animate-right {
+  animation: rowSlideInRight 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.xp-bar-bg {
+  background: #1e293b;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.xp-fill {
+  transition: width 1s ease-out;
+  box-shadow: 0 0 10px #84cc16;
+}
+
+/* Table Row Hover Effect */
+.scoreboard-row {
+  transition: all 0.2s;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.scoreboard-row:hover {
+  background: rgba(30, 41, 59, 0.8);
+  transform: scale(1.01);
+  z-index: 10;
+}
+
+#ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.rank-number {
+  font-family: 'Orbitron', sans-serif;
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+}
+
+/* Tab Styles */
+.tab-btn {
+  background: rgba(15, 23, 42, 0.6);
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
+  cursor: pointer;
+  transform: skewX(-15deg);
+}
+
+.tab-btn:hover {
+  background: rgba(30, 41, 59, 0.9);
+}
+
+.tab-btn.active {
+  background: rgba(37, 99, 235, 0.2);
+  border-bottom: 2px solid #3b82f6;
+  color: #fff;
+}
+
+.tab-btn .unskew-content {
+  color: #94a3b8;
+}
+
+.tab-btn.active .unskew-content {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+/* Grid Tile Style */
+.stat-tile {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s;
+}
+
+.stat-tile:hover {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- MOBILE OPTIMIZATIONS --- */
+@media screen and (max-width: 768px) {
+
+  /* Scale down header fonts */
+  h1 {
+    font-size: 2rem !important;
+  }
+
+  /* Compact Tabs */
+  .tab-btn {
+    padding: 8px 12px !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Compact Scoreboard Rows */
+  .scoreboard-row {
+    padding: 8px 4px !important;
+  }
+
+  .scoreboard-row .text-xl {
+    font-size: 1.1rem !important;
+  }
+
+  .scoreboard-row .text-sm {
+    font-size: 0.75rem !important;
+  }
+
+  /* Adjust Container Padding */
+  main {
+    padding: 1rem !important;
+  }
+
+  /* Adjust Footer Buttons */
+  footer button {
+    width: 100%;
+    padding: 12px 0 !important;
+    font-size: 1.1rem !important;
+  }
+
+  /* Stat Tiles */
+  .stat-tile {
+    padding: 8px !important;
+  }
+
+  .stat-tile .text-3xl {
+    font-size: 1.5rem !important;
+  }
+}

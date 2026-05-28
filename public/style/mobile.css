@@ -1,0 +1,594 @@
+/* ============================================
+   BITBLAST - Mobile Responsive Styles
+   Touch controls and HUD adjustments for mobile devices
+   ============================================ */
+
+/* ============================================
+   MOBILE DETECTION & BASE STYLES
+   ============================================ */
+
+/* Mobile Button Icons - Force Visibility and Correct Path */
+#mobile-fire-btn,
+#mobile-jump-btn,
+#mobile-reload-btn,
+#mobile-swap-btn {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  /* Semi-transparent background for contrast */
+  background-size: 60% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3) !important;
+}
+
+#mobile-fire-btn {
+  background-image: url('/assets/images/mobile_fire.png') !important;
+  border-color: rgba(255, 50, 50, 0.5) !important;
+}
+
+#mobile-jump-btn {
+  background-image: url('/assets/images/mobile_jump.png') !important;
+  border-color: rgba(100, 255, 150, 0.5) !important;
+}
+
+#mobile-reload-btn {
+  background-image: url('/assets/images/mobile_reload.png') !important;
+  border-color: rgba(255, 200, 100, 0.5) !important;
+}
+
+#mobile-swap-btn {
+  background-image: url('/assets/images/mobile_swap.png') !important;
+  border-color: rgba(200, 150, 255, 0.5) !important;
+}
+
+/* Joystick - FORCE HIDE VISUALS but keep touch zone */
+.mobile-joystick-base,
+.mobile-joystick-stick {
+  opacity: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+/* Touch-action for game canvas */
+body.mobile-device {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body.mobile-device canvas {
+  touch-action: none;
+}
+
+/* Prevent pull-to-refresh and overscroll */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* ============================================
+   MOBILE CONTROLS CONTAINER
+   ============================================ */
+
+#mobile-controls {
+  font-family: 'Rajdhani', 'Teko', sans-serif;
+}
+
+/* ============================================
+   ORIENTATION WARNING
+   ============================================ */
+
+#orientation-warning {
+  animation: fadeIn 0.3s ease-out;
+}
+
+#orientation-warning h2 {
+  text-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   RESPONSIVE HUD - MOBILE ADJUSTMENTS
+   ============================================ */
+
+/* Apply mobile adjustments on ALL touch devices (phones/tablets) AND small screens */
+@media screen and (pointer: coarse),
+screen and (max-width: 1000px) {
+
+  /* Scale down HUD elements */
+  :root {
+    --hud-scale: 0.8;
+  }
+
+  /* Leaderboard - SHOW on mobile (shrunk further) */
+  /* Leaderboard - SHOW on mobile (shrunk further) */
+  body #leaderboard-area {
+    display: block !important;
+    transform: scale(0.5);
+    /* Much smaller */
+    transform-origin: top left;
+    top: 5px !important;
+    left: 0px !important;
+    /* Snapped to left edge */
+    width: auto !important;
+    max-width: 300px;
+    max-height: 300px;
+    overflow: visible !important;
+    padding-left: 5px;
+  }
+
+  /* Killfeed - very compact, top aligned */
+  #killfeed {
+    top: 5px !important;
+    right: 5px !important;
+    transform: scale(0.4);
+    /* Extremely compact */
+    transform-origin: top right;
+    width: 800px !important;
+    /* ULTRA WIDE internal width to prevent wrapping */
+    max-height: 300px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    pointer-events: none;
+  }
+
+  /* Vitals area - FORCE BOTTOM LEFT for ALL mobile/portrait views */
+  /* Vitals area - FORCE BOTTOM LEFT for ALL mobile/portrait views */
+  body #vitals-area {
+    top: auto !important;
+    bottom: 5px !important;
+    /* Very close to edge */
+    left: 5px !important;
+    transform: scale(0.5);
+    /* Extremely compact */
+    transform-origin: bottom left;
+  }
+
+  /* Weapon/Ammo area - FORCE BOTTOM RIGHT (left of buttons) */
+  body #weapon-area {
+    top: auto !important;
+    /* Override any top positioning */
+    bottom: 10px !important;
+    right: 120px !important;
+    /* Keep left of buttons */
+    transform: scale(0.4);
+    /* ULTRA COMPACT (was 0.5) */
+    transform-origin: bottom right;
+    pointer-events: none;
+  }
+
+  /* Chat container - hide on mobile */
+  #chat-container {
+    display: none !important;
+  }
+
+  /* Crosshair - ensure visible */
+  #crosshair {
+    transform: scale(0.9);
+  }
+
+  /* Stats panel - hide on mobile */
+  #stats-panel {
+    display: none !important;
+  }
+
+  /* Wave display - smaller */
+  #wave-display {
+    transform: scale(0.4);
+    top: 5px !important;
+  }
+
+  /* Game timer - smaller and higher */
+  #game-timer {
+    transform: translateX(-50%) scale(0.5) !important;
+    top: 2px !important;
+    font-size: 16px !important;
+  }
+
+  /* Objective label - smaller */
+  #objective-label {
+    transform: scale(0.4);
+    top: 25px !important;
+  }
+
+  /* Combat feedback - adjust position */
+  #combat-feedback {
+    transform: scale(0.5);
+    top: 25% !important;
+  }
+
+  /* Damage numbers - slightly smaller */
+  .damage-number {
+    font-size: 12px !important;
+  }
+
+  /* Hitmarker - ensure centered */
+  #hitmarker {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+
+  /* Kill/Headshot icons */
+  #kill-icon,
+  #headshot-icon,
+  #death-icon {
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+}
+
+/* Extra small screens (phones in landscape) - touch devices only */
+@media screen and (max-height: 450px) and (pointer: coarse) {
+
+  :root {
+    --hud-scale: 0.65;
+  }
+
+  #leaderboard-area {
+    transform: scale(0.6);
+  }
+
+  #killfeed {
+    transform: scale(0.6);
+    max-height: 80px !important;
+  }
+
+  #vitals-area {
+    top: 5px !important;
+    bottom: auto !important;
+    left: 5px !important;
+    transform: scale(0.7);
+    transform-origin: top left;
+  }
+
+  #weapon-area {
+    top: 60px !important;
+    bottom: auto !important;
+    right: 5px !important;
+    transform: scale(0.7);
+    transform-origin: top right;
+  }
+
+  #crosshair {
+    transform: scale(0.75);
+  }
+
+  /* Hide non-essential UI on tiny screens */
+  #stats-panel,
+  #objective-label,
+  #powerup-indicator {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   MOBILE-SPECIFIC MENU ADJUSTMENTS
+   ============================================ */
+
+@media screen and (max-width: 1024px) {
+
+  /* Pause menu */
+  #pause-menu .menu-content {
+    padding: 20px !important;
+    width: 90% !important;
+    max-width: 350px !important;
+  }
+
+  #pause-menu h1 {
+    font-size: 28px !important;
+  }
+
+  #pause-menu .menu-button {
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+    touch-action: manipulation;
+  }
+
+  /* Settings menu */
+  #settings-menu .menu-content {
+    padding: 20px !important;
+    width: 95% !important;
+    max-width: 400px !important;
+  }
+
+  #settings-menu .setting-row {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px;
+  }
+
+  #settings-menu input[type="range"] {
+    width: 100% !important;
+    height: 40px;
+    touch-action: manipulation;
+  }
+
+  /* Game over screen */
+  #game-over .game-over-content {
+    padding: 20px !important;
+    width: 90% !important;
+  }
+
+  #game-over h1 {
+    font-size: 32px !important;
+  }
+
+  /* Scoreboard */
+  #scoreboard .scoreboard-content {
+    width: 95% !important;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  #scoreboard table {
+    font-size: 14px !important;
+  }
+}
+
+/* ============================================
+   LOBBY MOBILE ADJUSTMENTS
+   ============================================ */
+
+@media screen and (max-width: 1024px) {
+
+  .lobby-container {
+    padding: 10px !important;
+  }
+
+  .lobby-title {
+    font-size: 32px !important;
+  }
+
+  .mode-selector {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .mode-card {
+    width: 100% !important;
+    padding: 15px !important;
+  }
+
+  .play-button {
+    width: 100% !important;
+    padding: 15px !important;
+    font-size: 20px !important;
+    touch-action: manipulation;
+  }
+}
+
+/* ============================================
+   LOADING SCREEN MOBILE
+   ============================================ */
+
+@media screen and (max-width: 768px) {
+
+  .loading-logo {
+    font-size: 48px !important;
+    letter-spacing: 8px !important;
+  }
+
+  .spinner {
+    transform: scale(0.8);
+  }
+}
+
+/* ============================================
+   TOUCH FEEDBACK ANIMATIONS
+   ============================================ */
+
+@keyframes buttonPress {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(0.9);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fireButtonPulse {
+  0% {
+    box-shadow: 0 0 15px rgba(255, 50, 50, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(255, 50, 50, 0.6);
+  }
+
+  100% {
+    box-shadow: 0 0 15px rgba(255, 50, 50, 0.3);
+  }
+}
+
+.mobile-fire-active {
+  animation: fireButtonPulse 0.3s ease-in-out infinite;
+}
+
+/* ============================================
+   SAFE AREA INSETS (for notched phones)
+   ============================================ */
+
+@supports (padding: env(safe-area-inset-left)) {
+
+  #mobile-controls {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-joystick-container {
+    left: calc(30px + env(safe-area-inset-left)) !important;
+  }
+
+  .mobile-left-buttons {
+    left: calc(190px + env(safe-area-inset-left)) !important;
+  }
+
+  .mobile-right-buttons {
+    right: calc(30px + env(safe-area-inset-right)) !important;
+  }
+
+  #vitals-area {
+    left: calc(10px + env(safe-area-inset-left)) !important;
+    bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+  }
+
+  #weapon-area {
+    right: calc(10px + env(safe-area-inset-right)) !important;
+    bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+  }
+
+  #leaderboard-area {
+    left: calc(10px + env(safe-area-inset-left)) !important;
+  }
+
+  #killfeed-container {
+    right: calc(10px + env(safe-area-inset-right)) !important;
+  }
+}
+
+/* ============================================
+   FULLSCREEN MODE ADJUSTMENTS
+   ============================================ */
+
+:fullscreen #hud,
+:-webkit-full-screen #hud,
+:-moz-full-screen #hud {
+  /* Ensure HUD is visible in fullscreen */
+  z-index: 2147483647;
+}
+
+:fullscreen #mobile-controls,
+:-webkit-full-screen #mobile-controls,
+:-moz-full-screen #mobile-controls {
+  z-index: 2147483646;
+}
+
+/* ============================================
+   PERFORMANCE OPTIMIZATIONS FOR MOBILE
+   ============================================ */
+
+@media screen and (max-width: 1024px) {
+
+  /* Reduce blur effects on mobile for performance */
+  .hud-panel {
+    backdrop-filter: blur(2px) !important;
+  }
+
+  /* Simplify shadows */
+  #mobile-controls button {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Disable some animations on low-end devices */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ============================================
+   MOBILE SPECIFIC INPUT FEEDBACK
+   ============================================ */
+
+/* Visual feedback for active touch on look area */
+.look-zone-active::after {
+  content: '';
+  position: fixed;
+  top: 50%;
+  right: 25%;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(50%, -50%);
+  pointer-events: none;
+  animation: lookIndicator 0.5s ease-out forwards;
+}
+
+@keyframes lookIndicator {
+  0% {
+    opacity: 0.5;
+    transform: translate(50%, -50%) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(50%, -50%) scale(2);
+  }
+}
+
+/* Sprint indicator when joystick pushed forward */
+.sprint-active .mobile-joystick-base {
+  border-color: rgba(255, 200, 50, 0.8) !important;
+  box-shadow: 0 0 25px rgba(255, 200, 50, 0.4) !important;
+}
+
+/* Low ammo warning pulse on mobile */
+@media screen and (max-width: 1024px) {
+  .low-ammo #mobile-reload-btn {
+    animation: lowAmmoPulse 0.5s ease-in-out infinite;
+  }
+
+  @keyframes lowAmmoPulse {
+
+    0%,
+    100% {
+      background: rgba(255, 200, 100, 0.25);
+      border-color: rgba(255, 200, 100, 0.7);
+    }
+
+    50% {
+      background: rgba(255, 100, 50, 0.5);
+      border-color: rgba(255, 100, 50, 1);
+    }
+  }
+}
+
+/* ============================================
+   MOBILE DEBUG OVERLAY (development)
+   ============================================ */
+
+#mobile-debug-overlay {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #00ff00;
+  font-family: monospace;
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  z-index: 10000;
+  pointer-events: none;
+  display: none;
+}
+
+body.mobile-debug #mobile-debug-overlay {
+  display: block;
+}
