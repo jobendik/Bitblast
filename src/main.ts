@@ -2,10 +2,16 @@
 import world from './core/World';
 import { getMatchManager } from './core/MatchManager';
 import { BitBlastLobby } from './lobby/BitBlastLobby';
+import { CG } from './integrations/CrazyGamesSDK';
 
 // Expose world and matchManager for debugging
 (window as any).world = world;
 (window as any).getMatchManager = getMatchManager;
+(window as any).CG = CG;
+
+// Initialize the CrazyGames SDK as early as possible (resolves even when not on the
+// portal, so the lobby can always render). The lobby awaits CG.ready internally.
+CG.init();
 
 // Create and show the BITBLAST lobby
 const lobby = new BitBlastLobby();
@@ -17,6 +23,10 @@ lobby.init((matchInfo) => {
 
 	// Initialize world with callback to finish setup
 	world.init(() => {
+		// Assets are loaded and the match is ready — tell the SDK gameplay is starting.
+		CG.loadingStop();
+		CG.gameplayStart();
+
 		// Start the appropriate game mode based on lobby selection
 		if (world.gameModeManager) {
 			// Map lobby mode to game mode

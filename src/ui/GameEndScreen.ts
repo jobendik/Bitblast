@@ -1,5 +1,7 @@
 // Game End Screen with Statistics - Tactical Benchmark Edition
 
+import { CG } from '../integrations/CrazyGamesSDK';
+
 declare const THREE: any;
 
 // Interface for each player's end-game stats
@@ -355,10 +357,27 @@ export class GameEndScreen {
         if (this.countdownInterval) {
           clearInterval(this.countdownInterval);
         }
-        // Show loading screen before restarting game
-        this.showLoadingScreen();
+        // Show a midgame (interstitial) ad at this natural break, then load the next match.
+        this.proceedToNextMatch();
       }
     }, 1000);
+  }
+
+  /**
+   * Transition to the next match. On CrazyGames this is the ideal moment for a midgame
+   * ad — gameplay is already stopped and the player expects a short wait. Audio is muted
+   * for the ad's duration. Falls through immediately when no SDK/ad is available.
+   */
+  private async proceedToNextMatch(): Promise<void> {
+    const audio = (window as any).world?.combat?.audioManager
+      || (window as any).world?.assetManager?.audioManager;
+
+    await CG.requestMidgameAd({
+      onMute: () => { try { audio?.mute?.(); } catch { /* ignore */ } },
+      onUnmute: () => { try { audio?.unmute?.(); } catch { /* ignore */ } },
+    });
+
+    this.showLoadingScreen();
   }
 
   private showRewardsPopup(): void {
@@ -383,9 +402,12 @@ export class GameEndScreen {
           </div>
           <div class="flex justify-between items-center bg-purple-900/50 p-3 rounded border border-purple-500/30">
             <span class="text-purple-200 font-bold">Total XP</span>
-            <span class="text-yellow-400 font-bold text-xl">${document.getElementById('xp-total')?.textContent || '+0'}</span>
+            <span id="reward-total-display" class="text-yellow-400 font-bold text-xl">${document.getElementById('xp-total')?.textContent || '+0'}</span>
           </div>
         </div>
+        <button id="btn-double-rewards" class="w-full mb-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:brightness-110 text-black font-bold py-3 rounded transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-play"></i> WATCH AD — DOUBLE REWARDS
+        </button>
         <button id="btn-close-rewards" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded transition-colors">
           CONTINUE
         </button>
@@ -393,6 +415,29 @@ export class GameEndScreen {
     `;
 
     document.body.appendChild(popup);
+
+    // Double rewards via rewarded ad (CrazyGames monetization).
+    const doubleBtn = document.getElementById('btn-double-rewards') as HTMLButtonElement | null;
+    doubleBtn?.addEventListener('click', async () => {
+      if (doubleBtn.disabled) return;
+      doubleBtn.disabled = true;
+      doubleBtn.textContent = 'LOADING AD…';
+      const audio = (window as any).world?.combat?.audioManager
+        || (window as any).world?.assetManager?.audioManager;
+      const rewarded = await CG.requestRewardedAd({
+        onMute: () => { try { audio?.mute?.(); } catch { /* ignore */ } },
+        onUnmute: () => { try { audio?.unmute?.(); } catch { /* ignore */ } },
+      });
+      const totalEl = document.getElementById('reward-total-display');
+      if (rewarded && totalEl) {
+        const current = parseInt((totalEl.textContent || '0').replace(/[^0-9]/g, ''), 10) || 0;
+        totalEl.textContent = `+${current * 2}`;
+        doubleBtn.textContent = '✓ REWARDS DOUBLED';
+      } else {
+        doubleBtn.disabled = false;
+        doubleBtn.innerHTML = '<i class="fa-solid fa-play"></i> WATCH AD — DOUBLE REWARDS';
+      }
+    });
 
     // Close button handler
     document.getElementById('btn-close-rewards')?.addEventListener('click', () => {
@@ -447,6 +492,10 @@ export class GameEndScreen {
 
     this.isShowing = true;
     this.container.classList.remove('hidden');
+
+    // Match is over — gameplay has stopped. This lets the CrazyGames SDK serve ads
+    // at this natural break (the midgame ad fires before the next match starts).
+    CG.gameplayStop();
 
     // Play victory/defeat audio if provided
     if (audio && typeof audio.play === 'function') {

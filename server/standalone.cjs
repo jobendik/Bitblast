@@ -999,6 +999,23 @@ setInterval(() => {
 // ============== Start Server ==============
 const PORT = process.env.PORT || 3000;
 
+// Fail gracefully if the port is already taken (e.g. a previous server is still running)
+// instead of dumping a raw stack trace.
+server.on('error', (err) => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.error('');
+    console.error(`✖ Port ${PORT} is already in use — another server instance is probably still running.`);
+    console.error('  Fix it with one of:');
+    console.error(`    • Windows : Get-NetTCPConnection -LocalPort ${PORT} -State Listen | %{ Stop-Process -Id $_.OwningProcess -Force }`);
+    console.error(`    • macOS/Linux : lsof -ti tcp:${PORT} | xargs kill -9`);
+    console.error(`    • Or start on a different port:  $env:PORT=3001; npm run server:standalone`);
+    console.error('');
+    process.exit(1);
+  }
+  console.error('Server error:', err);
+  process.exit(1);
+});
+
 // Initialize YUKA bot system before starting server
 initializeYukaBotSystem().then((success) => {
   server.listen(PORT, () => {

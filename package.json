@@ -10,7 +10,9 @@
     "build:check": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "start": "npm run dev",
+    "server": "node server/standalone.cjs",
     "server:standalone": "node server/standalone.cjs",
+    "dev:all": "concurrently -n server,client -c magenta,cyan \"npm:server\" \"npm:dev\"",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit"
@@ -25,6 +27,7 @@
     "@types/yuka": "^0.7.4",
     "@typescript-eslint/eslint-plugin": "^8.18.1",
     "@typescript-eslint/parser": "^8.18.1",
+    "concurrently": "^10.0.0",
     "eslint": "^9.17.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
