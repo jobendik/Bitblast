@@ -7,6 +7,7 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import { NavMeshLoader, CostTable } from 'yuka';
 import { CONFIG } from './Config';
+import { rewriteAssetUrl } from '../utils/assetPath';
 
 /**
 * Class for representing the global asset manager. It is responsible
@@ -43,6 +44,8 @@ class AssetManager {
 	constructor() {
 
 		this.loadingManager = new LoadingManager();
+		// Resolve all asset URLs against the deploy base (e.g. /Bitblast/ on Pages).
+		this.loadingManager.setURLModifier(rewriteAssetUrl);
 
 		this.animationLoader = new AnimationLoader(this.loadingManager);
 		this.audioLoader = new AudioLoader(this.loadingManager);

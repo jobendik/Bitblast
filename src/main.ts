@@ -1,8 +1,14 @@
 
+import * as THREE from 'three';
 import world from './core/World';
 import { getMatchManager } from './core/MatchManager';
 import { BitBlastLobby } from './lobby/BitBlastLobby';
 import { CG } from './integrations/CrazyGamesSDK';
+import { rewriteAssetUrl } from './utils/assetPath';
+
+// Resolve asset URLs against the deploy base (e.g. /Bitblast/ on GitHub Pages).
+// Covers all THREE loaders that use the default LoadingManager.
+THREE.DefaultLoadingManager.setURLModifier(rewriteAssetUrl);
 
 // Expose world and matchManager for debugging
 (window as any).world = world;
@@ -40,8 +46,12 @@ lobby.init((matchInfo) => {
 			world.gameModeManager.setMode(gameMode as import('./gamemodes/IGameMode').GameModeType);
 		}
 
+		// Solo / offline match (e.g. the static GitHub Pages build): no server,
+		// so skip networking entirely — World already spawns local AI bots.
+		const isSolo = !matchInfo.socket || matchInfo.matchId === 'solo';
+
 		// Connect NetworkManager to the match - REUSE THE LOBBY SOCKET!
-		if (world.networkManager) {
+		if (!isSolo && world.networkManager) {
 			// Pass the lobby socket so we stay on the same connection that went through matchmaking
 			world.networkManager.connect(
 				matchInfo.serverUrl,
@@ -85,6 +95,8 @@ lobby.init((matchInfo) => {
 			}).catch((err) => {
 				console.error('[Main] Network connection error:', err);
 			});
+		} else if (isSolo) {
+			console.info('[Main] Solo match — running offline against local AI bots.');
 		} else {
 			console.error('[Main] NetworkManager not initialized!');
 		}
