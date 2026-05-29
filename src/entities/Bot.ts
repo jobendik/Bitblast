@@ -110,6 +110,10 @@ class Bot extends Vehicle {
 	public tookDamageRecently: boolean = false;
 	public damageTime: number = 0;
 
+	// Combat-movement state (consumed by CombatTacticsSystem)
+	public inCombat: boolean = false;
+	public isCrouching: boolean = false;
+
 	/**
 	 * Serialization for network sync
 	 */
@@ -265,7 +269,6 @@ class Bot extends Vehicle {
 
 		// debug
 
-		this.pathHelper = null;
 		this.pathHelper = null;
 		this.hitboxHelper = null;
 
@@ -465,6 +468,9 @@ class Bot extends Vehicle {
 				const isMoving = this.getSpeed() > 0.1;
 				this.visualWeaponSystem.update(delta, { x: 0, y: 0 }, false, isMoving, false, this.currentTime);
 			}
+
+			// Maintain combat state so tactical movement only runs while engaging.
+			this.inCombat = this.targetSystem.hasTarget() && this.targetSystem.isTargetShootable();
 
 			// Update Tactics
 			this.combatTacticsSystem.update(delta);
@@ -1299,6 +1305,16 @@ class Bot extends Vehicle {
 				// reduce health (clamp to 0 minimum)
 				this.health = Math.max(0, this.health - telegram.data.damage);
 
+				// React to incoming fire: throw off aim and trigger an evasive maneuver.
+				this.tookDamageRecently = true;
+				this.damageTime = this.currentTime;
+				if (this.weaponSystem?.humanAim) {
+					this.weaponSystem.humanAim.takeDamage(telegram.data.damage);
+				}
+				if (this.combatTacticsSystem) {
+					this.combatTacticsSystem.onDamageTaken();
+				}
+
 				// logging
 
 				if (this.world.debug) {
@@ -1311,10 +1327,12 @@ class Bot extends Vehicle {
 
 				if (this.health <= 0 && this.status === STATUS_ALIVE) {
 
-					this.initDeath();					// Track kill for game mode statistics
+					this.initDeath();
+
+					// Track kill for game mode statistics
 					const killMode = this.world.gameModeManager?.getCurrentMode();
 					if (killMode && telegram.sender) {
-						const killerId = telegram.sender.isPlayer ? telegram.sender.uuid : telegram.sender.uuid;
+						const killerId = telegram.sender.uuid;
 						const victimId = this.uuid;
 						const weapon = telegram.data.weapon || 'Unknown';
 						const isHeadshot = telegram.data.isHeadshot || false;

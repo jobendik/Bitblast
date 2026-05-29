@@ -1,11 +1,11 @@
 import { Vector3, MathUtils } from 'yuka';
+import { STATUS_ALIVE } from './Constants';
 import { CONFIG } from './Config';
 
 class CombatTacticsSystem {
     public owner: any; // GameEntity / Bot
 
     // State
-    private timeSinceLastMove: number = 0;
     private currentManeuver: 'NONE' | 'STRAFE' | 'CROUCH_SPAM' | 'JIGGLE' = 'NONE';
     private maneuverTimer: number = 0;
     private maneuverDirection: number = 1; // 1 or -1
@@ -15,7 +15,7 @@ class CombatTacticsSystem {
     }
 
     update(dt: number) {
-        if (!this.owner.inCombat || this.owner.isDead) {
+        if (!this.owner.inCombat || this.owner.status !== STATUS_ALIVE) {
             this.currentManeuver = 'NONE';
             return;
         }
@@ -30,13 +30,13 @@ class CombatTacticsSystem {
         // Execute Maneuver
         switch (this.currentManeuver) {
             case 'STRAFE':
-                this._executeStrafe(dt);
+                this._executeStrafe();
                 break;
             case 'CROUCH_SPAM':
-                this._executeCrouchSpam(dt);
+                this._executeCrouchSpam();
                 break;
             case 'JIGGLE':
-                this._executeJigglePeek(dt);
+                this._executeJigglePeek();
                 break;
         }
     }
@@ -59,43 +59,44 @@ class CombatTacticsSystem {
     }
 
     /**
-     * Strafing: Move perpendicular to target
+     * Applies a lateral strafe velocity, clamped to the bot's max speed so it
+     * doesn't fight navmesh clamping or overshoot.
      */
-    private _executeStrafe(dt: number) {
+    private _applyStrafe(direction: number) {
         const target = this.owner.targetSystem?.getTarget();
         if (!target) return;
 
-        // Calculate Right Vector relative to look direction
         const forward = new Vector3();
         this.owner.getDirection(forward);
         const right = new Vector3().crossVectors(forward, this.owner.up).normalize();
 
-        // Apply movement input (Bot uses velocity directly or sets input for physics)
-        // Assuming Bot class has manual control overrides or we modify velocity directly 
-        // if no pathfinding active
+        const strafeVec = right.multiplyScalar(direction * CONFIG.BOT.MOVEMENT.STRAFE_SPEED);
+        this.owner.velocity.add(strafeVec);
 
-        // Note: Use 'movementInput' if Bot has it, otherwise modify velocity
-        const strafeVec = right.multiplyScalar(this.maneuverDirection * CONFIG.BOT.MOVEMENT.STRAFE_SPEED);
-        this.owner.velocity.add(strafeVec).normalize().multiplyScalar(this.owner.maxSpeed);
+        // Clamp to max speed instead of stomping the existing (path) velocity.
+        const speed = this.owner.velocity.length();
+        if (speed > this.owner.maxSpeed) {
+            this.owner.velocity.multiplyScalar(this.owner.maxSpeed / speed);
+        }
     }
 
-    private _executeCrouchSpam(dt: number) {
+    /**
+     * Strafing: Move perpendicular to target
+     */
+    private _executeStrafe() {
+        this._applyStrafe(this.maneuverDirection);
+    }
+
+    private _executeCrouchSpam() {
         // Toggle crouch every 0.5s
         const crouchState = (Math.floor(this.maneuverTimer * 4) % 2) === 0;
         this.owner.isCrouching = crouchState;
     }
 
-    private _executeJigglePeek(dt: number) {
-        // Complex: Move slightly out of cover and back
-        // Just oscillate left/right quickly
+    private _executeJigglePeek() {
+        // Oscillate left/right quickly
         const oscillate = Math.sin(this.maneuverTimer * 10) > 0 ? 1 : -1;
-
-        const forward = new Vector3();
-        this.owner.getDirection(forward);
-        const right = new Vector3().crossVectors(forward, this.owner.up).normalize();
-
-        const strafeVec = right.multiplyScalar(oscillate * CONFIG.BOT.MOVEMENT.STRAFE_SPEED);
-        this.owner.velocity.add(strafeVec);
+        this._applyStrafe(oscillate);
     }
 
     /**

@@ -1,11 +1,10 @@
-import { Vector3, MathUtils } from 'yuka';
+import { Vector3 } from 'yuka';
 import { CONFIG } from './Config';
 import { WeaponType } from '../types/weapons';
 import { HumanAimSystem } from './HumanAimSystem';
 
 const displacement = new Vector3();
 const targetPosition = new Vector3();
-const offset = new Vector3();
 
 // Define a simple interface for what the AI needs to know about a weapon
 interface AIWeaponState {
@@ -25,6 +24,10 @@ class AIWeaponSystem {
 	public aimAccuracy: number;
 	public humanAim: HumanAimSystem;
 
+	// True while the bot has fired recently; drives HumanAimSystem warm-up/recoil.
+	public isFiring: boolean = false;
+	private lastShotTime: number = -Infinity;
+
 	// Inventory
 	public weapons: Array<AIWeaponState>;
 	public currentWeaponType: WeaponType | null;
@@ -39,14 +42,20 @@ class AIWeaponSystem {
 
 		this.owner = owner;
 
-		this.reactionTime = CONFIG.BOT.WEAPON.REACTION_TIME;
+		// Per-bot skill comes from personality (falls back to the global defaults for
+		// entities without a personality, e.g. the human player's logic stub).
+		const personality = owner.personalitySystem;
+		const reactionModifier = personality?.getReactionTimeModifier?.() ?? 1;
+		const accuracy = personality?.traits?.accuracy ?? 0.5;
+
+		this.reactionTime = CONFIG.BOT.WEAPON.REACTION_TIME * reactionModifier;
 		this.aimAccuracy = CONFIG.BOT.WEAPON.AIM_ACCURACY;
 
 		this.weapons = new Array();
 		this.currentWeaponType = null;
 		this.nextWeaponType = null;
 
-		this.humanAim = new HumanAimSystem(owner);
+		this.humanAim = new HumanAimSystem(owner, accuracy);
 	}
 
 	/**
@@ -243,7 +252,7 @@ class AIWeaponSystem {
 	}
 
 	/* Legacy support methods */
-	getWeapon(type: any): any { return null; }
+	getWeapon(_type: any): any { return null; }
 	showCurrentWeapon(): this { return this; }
 	hideCurrentWeapon(): this { return this; }
 
@@ -257,6 +266,11 @@ class AIWeaponSystem {
 	* @return {WeaponSystem} A reference to this weapon system.
 	*/
 	update(delta: number): this {
+
+		// Consider the bot "firing" for a short window after each shot so the
+		// HumanAimSystem warm-up/recoil model has something to react to.
+		const elapsed = this.owner.world?.time?.getElapsed?.() ?? 0;
+		this.isFiring = (elapsed - this.lastShotTime) < 0.3;
 
 		this.updateWeaponChange();
 		this.humanAim.update(delta);
@@ -351,30 +365,11 @@ class AIWeaponSystem {
 	}
 
 	/**
-	* Ensures the enemy does not perfectly aim at the given target position.
-	*/
-	addNoiseToAim(targetPosition: any): any {
-
-		const distance = this.owner.position.distanceTo(targetPosition);
-
-		offset.x = MathUtils.randFloat(- this.aimAccuracy, this.aimAccuracy);
-		offset.y = MathUtils.randFloat(- this.aimAccuracy, this.aimAccuracy);
-		offset.z = MathUtils.randFloat(- this.aimAccuracy, this.aimAccuracy);
-
-		const maxDistance = CONFIG.BOT.WEAPON.NOISE_MAX_DISTANCE;
-		const f = Math.min(distance, maxDistance) / maxDistance;
-
-		targetPosition.add(offset.multiplyScalar(f));
-
-		return targetPosition;
-
-	}
-
-	/**
 	* Shoots at the given position with the current weapon.
 	*/
 	shoot(targetPosition: any): this {
 		if (this.owner.visualWeaponSystem) {
+			this.lastShotTime = this.owner.world?.time?.getElapsed?.() ?? this.lastShotTime;
 			this.owner._shootWithVisuals(targetPosition);
 		}
 		return this;

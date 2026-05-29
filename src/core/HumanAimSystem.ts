@@ -1,6 +1,13 @@
 import { Vector3, MathUtils } from 'yuka';
-import { CONFIG } from './Config';
 
+/**
+ * Simulates human-like aiming for bots: warm-up over sustained fire, stress when
+ * taking damage, recoil bloom, and smoothed error so aim drifts rather than snaps.
+ *
+ * NOTE: Yuka 0.7.x exposes neither `MathUtils.lerp` nor `Vector3.lerp`, so all
+ * interpolation here is done with the local helpers below. Calling the missing
+ * Yuka methods previously threw on every shot and disabled enemy fire entirely.
+ */
 class HumanAimSystem {
     public owner: any; // GameEntity / Bot
 
@@ -14,8 +21,7 @@ class HumanAimSystem {
     public recoilAccumulation: number = 0;
 
     // Tuning
-    private baseAccuracy: number = 0.5; // From Personality
-    private reactionTime: number = 0.2; // From Personality
+    private baseAccuracy: number = 0.5; // From Personality (0 = wild, 1 = perfect)
 
     // Constants
     private readonly WARMUP_SPEED = 2.0; // Seconds to max accuracy
@@ -24,7 +30,19 @@ class HumanAimSystem {
 
     constructor(owner: any, accuracy: number = 0.5) {
         this.owner = owner;
-        this.baseAccuracy = accuracy;
+        this.baseAccuracy = MathUtils.clamp(accuracy, 0, 1);
+    }
+
+    /** Scalar linear interpolation (Yuka's MathUtils lacks lerp). */
+    private static lerp(a: number, b: number, t: number): number {
+        return a + (b - a) * t;
+    }
+
+    /** In-place vector interpolation (Yuka's Vector3 lacks lerp). */
+    private static lerpVec(out: Vector3, target: Vector3, t: number): void {
+        out.x += (target.x - out.x) * t;
+        out.y += (target.y - out.y) * t;
+        out.z += (target.z - out.z) * t;
     }
 
     update(dt: number) {
@@ -50,46 +68,35 @@ class HumanAimSystem {
     }
 
     /**
-     * Calculates the point the bot typically wants to aim at, with error applied.
+     * Calculates the point the bot typically wants to aim at, with error and a
+     * modest amount of target lead applied.
      */
     calculateAimPoint(targetPosition: Vector3, targetVelocity: Vector3 = new Vector3()): Vector3 {
         const finalAim = new Vector3().copy(targetPosition);
 
-        // 1. Calculate Error Magnitude based on all factors
-        // Start with base inaccuracy (1.0 - accuracy)
+        // 1. Calculate Error Magnitude based on all factors.
+        // Start with base inaccuracy (1.0 - accuracy); warmup tightens it.
         let errorRadius = (1.0 - this.baseAccuracy) * 2.0;
+        errorRadius *= HumanAimSystem.lerp(1.0, 0.2, this.aimWarmup); // Reduce error as we warm up
+        errorRadius += this.stress * 1.5;                              // Stress widens it
+        errorRadius += this.recoilAccumulation * 0.5;                  // Recoil bloom
 
-        // Reduce error as we warmup
-        errorRadius *= MathUtils.lerp(1.0, 0.2, this.aimWarmup);
-
-        // Increase error with stress
-        errorRadius += this.stress * 1.5;
-
-        // Increase error with recoil
-        errorRadius += this.recoilAccumulation * 0.5;
-
-        // Distance factor: Errors are magnified over distance in world space 
-        // (already handled by angular spread naturally, but we simulating "sway")
-
-        // 2. Generate Noisy Offset
-        // We use Perlin-like temporal noise usually, but simple random for now is okay
-        // if we smooth it.
+        // 2. Generate a smoothed noisy offset so aim drifts instead of teleporting.
         const noise = new Vector3(
             MathUtils.randFloat(-1, 1),
             MathUtils.randFloat(-0.5, 0.5), // Less vertical error usually
             MathUtils.randFloat(-1, 1)
         ).normalize().multiplyScalar(errorRadius);
+        HumanAimSystem.lerpVec(this.currentError, noise, 0.1);
 
-        // Smoothly interpolate current error to new noise target to avoid jitter
-        // Use a "spring" force or simple lerp
-        this.currentError.lerp(noise, 0.1); // 0.1 is smoothing factor
+        // 3. Tracking lead: follow the target's velocity with deliberate lag so
+        // skilled bots trail strafing players slightly rather than aiming dead-on.
+        HumanAimSystem.lerpVec(this.targetVelocityTracker, targetVelocity, 0.9);
+        const leadTime = 0.15 * this.baseAccuracy; // better bots lead more
+        finalAim.x += this.targetVelocityTracker.x * leadTime;
+        finalAim.z += this.targetVelocityTracker.z * leadTime;
 
-        // 3. Tracking Lag (Lead the target... poorly?)
-        // Perfect lead = targetPosition + targetVelocity * timeToHit
-        // We add "reaction lag" by mixing current velocity with old velocity
-        this.targetVelocityTracker.lerp(targetVelocity, 0.9); // High val = good tracking
-
-        // Apply error
+        // 4. Apply error.
         finalAim.add(this.currentError);
 
         return finalAim;

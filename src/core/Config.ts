@@ -26,7 +26,8 @@ const CONFIG = {
 	},
 	BOT: {
 		MOVEMENT: {
-			MAX_SPEED: 3, // meter/seconds
+			MAX_SPEED: 7, // meter/seconds (competitive with player walkSpeed of 8)
+			STRAFE_SPEED: 7, // meter/seconds (lateral combat strafing)
 			DODGE_SIZE: 4 // meter
 		},
 		GOAL: {
