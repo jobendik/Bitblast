@@ -3,7 +3,8 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   root: '.',
-  base: '/',
+  // '/' for local dev; the GitHub Pages workflow sets BASE_PATH=/Bitblast/.
+  base: process.env.BASE_PATH || '/',
   publicDir: 'public',
   build: {
     outDir: 'dist',

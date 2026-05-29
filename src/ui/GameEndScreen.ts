@@ -1,6 +1,7 @@
 // Game End Screen with Statistics - Tactical Benchmark Edition
 
 import { CG } from '../integrations/CrazyGamesSDK';
+import { assetUrl } from '../utils/assetPath';
 
 declare const THREE: any;
 
@@ -534,7 +535,7 @@ export class GameEndScreen {
     loadingScreen.className = 'fixed inset-0 z-[2000] flex items-center justify-center bg-black';
     loadingScreen.innerHTML = `
       <div class="loading-image-container">
-        <img src="/assets/images/loadingScreen.png" alt="Loading" class="loading-image" />
+        <img src="${assetUrl('assets/images/loadingScreen.png')}" alt="Loading" class="loading-image" />
       </div>
     `;
 

@@ -784,11 +784,23 @@ export class BitBlastLobby {
                 this.setText('bb-play-sub', 'SEARCHING FOR MATCH…');
                 this.setMmStatus('SEARCHING FOR MATCH');
             } else {
-                this.setText('bb-play-sub', 'SERVER OFFLINE — CANCEL & RETRY');
-                this.setMmStatus('SERVER OFFLINE');
-                this.setMmSearching(false);
+                // No multiplayer server reachable (e.g. the static GitHub Pages build):
+                // fall back to a solo match against local AI bots so the game is playable.
+                this.startSoloMatch();
             }
         }, 2500);
+    }
+
+    /**
+     * Starts an offline single-player match. With a null socket and no server bot
+     * spawns, World._initBots() creates the local Yuka AI bots.
+     */
+    private startSoloMatch(): void {
+        if (!this.isQueued || this.started) return;
+        this.setText('bb-play-sub', 'STARTING SOLO MATCH…');
+        this.setMmStatus('SOLO — VS BOTS');
+        this.setMmSearching(false);
+        this.launch({ matchId: 'solo', token: '', serverUrl: this.serverUrl, socket: null });
     }
 
     private clearConnectRetry(): void {

@@ -4,11 +4,12 @@
 import { 
   LobbyManager 
 } from './LobbyManager';
-import { 
-  QueueStatus, 
-  MatchFoundData, 
-  LobbyEventType 
+import {
+  QueueStatus,
+  MatchFoundData,
+  LobbyEventType
 } from './types';
+import { assetUrl } from '../utils/assetPath';
 
 /**
  * Lobby UI Helper - Creates and manages lobby UI elements
@@ -388,7 +389,7 @@ export class LobbyUI {
 
     this.loadingScreen.innerHTML = `
       <div class="loading-image-container">
-        <img src="/assets/images/loadingScreen.png" alt="Loading" class="loading-background" />
+        <img src="${assetUrl('assets/images/loadingScreen.png')}" alt="Loading" class="loading-background" />
         <div class="loading-overlay">
           <div class="loading-title">MATCH FOUND</div>
           <div class="loading-status">
