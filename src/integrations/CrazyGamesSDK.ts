@@ -302,6 +302,12 @@ class CrazyGamesService {
         this.authListeners.push(listener);
     }
 
+    /** Unsubscribe a previously registered auth listener (prevents leaks on teardown). */
+    public offAuthChanged(listener: (user: CrazyUser | null) => void): void {
+        const idx = this.authListeners.indexOf(listener);
+        if (idx !== -1) this.authListeners.splice(idx, 1);
+    }
+
     /* ---------------------- Cloud data (with fallback) ---------------- */
 
     /** Persist a value to CrazyGames cloud storage when available, else localStorage. */

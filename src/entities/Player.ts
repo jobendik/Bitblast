@@ -5,6 +5,7 @@ import { CONFIG } from '../core/Config';
 import { PLAYER_CONFIG } from '../config/gameConfig';
 import { Projectile } from '../weapons/Projectile';
 import { STATUS_ALIVE, WEAPON_TYPES_BLASTER, WEAPON_TYPES_SHOTGUN, WEAPON_TYPES_ASSAULT_RIFLE, MESSAGE_HIT, MESSAGE_DEAD, STATUS_DYING, STATUS_DEAD } from '../core/Constants';
+import { WeaponType } from '../types/weapons';
 import World from '../core/World';
 
 const intersectionPoint = new Vector3();
@@ -71,6 +72,7 @@ class Player extends MovingEntity {
 	public stamina: number = 100;
 	public landingImpact: number = 0;
 	public headBobTime: number = 0;
+	public spawnProtectedUntil: number = 0; // currentTime until which damage is ignored
 
 	// Audio state
 	public lastFootstepTime: number = 0;
@@ -777,6 +779,11 @@ class Player extends MovingEntity {
 			return;
 		}
 
+		// Ignore damage during spawn protection.
+		if (this.currentTime < this.spawnProtectedUntil) {
+			return;
+		}
+
 		try {
 			this.health = Math.max(0, this.health - damage);
 
@@ -840,8 +847,9 @@ class Player extends MovingEntity {
 
 		// Use visual weapon system if available
 		if (world.combat && world.combat.weaponSystem) {
-			const onGround = this.velocity.y === 0;
-			const isSprinting = Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2) > 10;
+			// Use the authoritative physics state, not re-derived heuristics.
+			const onGround = this.onGround;
+			const isSprinting = this.isSprinting;
 			const velocity = new ThreeVector3(this.velocity.x, this.velocity.y, this.velocity.z);
 
 			// Build obstacle list: level geometry + enemy render components
@@ -941,7 +949,13 @@ class Player extends MovingEntity {
 			const weaponIndex = weaponMap[type] !== undefined ? weaponMap[type] : 0;
 			this.world.combat.weaponSystem.switchWeapon(weaponIndex);
 		} else {
-			this.weaponSystem.setNextWeapon(type);
+			// Legacy fallback: map numeric weapon type to a WeaponType string.
+			const legacyMap: { [key: number]: WeaponType } = {
+				[WEAPON_TYPES_BLASTER]: WeaponType.Pistol,
+				[WEAPON_TYPES_SHOTGUN]: WeaponType.Shotgun,
+				[WEAPON_TYPES_ASSAULT_RIFLE]: WeaponType.AK47,
+			};
+			this.weaponSystem.setNextWeapon(legacyMap[type] ?? WeaponType.AK47);
 		}
 
 		return this;
@@ -1149,6 +1163,11 @@ class Player extends MovingEntity {
 
 				// Ignore damage if already dead or dying
 				if (this.status !== STATUS_ALIVE) {
+					return true;
+				}
+
+				// Ignore damage during spawn protection.
+				if (this.currentTime < this.spawnProtectedUntil) {
 					return true;
 				}
 

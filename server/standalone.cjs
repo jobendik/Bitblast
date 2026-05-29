@@ -104,6 +104,52 @@ const SPAWN_POINTS = [
   { position: { x: 39.7, y: -7.17, z: 35 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } }
 ];
 
+// ============== Input validation / anti-cheat ==============
+// The client is still responsible for hit detection, but the server validates and
+// clamps everything it receives so a tampered client can't deal absurd damage,
+// teleport, send NaN/Infinity, or flood events.
+const ARENA_HALF = 90;   // generous playable half-extent (meters)
+const ARENA_MIN_Y = -20;
+const ARENA_MAX_Y = 60;
+const MAX_CHAT_LENGTH = 200;
+
+// Max plausible single-hit damage per weapon (body damage x headshot multiplier),
+// mirrored from src/config/weaponConfigs.ts. Anything above this is rejected/clamped.
+const WEAPON_MAX_DAMAGE = {
+  AK47: 35, AWP: 158, LMG: 29, M4: 30, Pistol: 28,
+  Scar: 40, Shotgun: 96, Sniper: 170, Tec9: 20,
+};
+const DEFAULT_MAX_DAMAGE = 170;
+
+const isFiniteNum = (n) => typeof n === 'number' && Number.isFinite(n);
+const isValidVec3 = (v) => v && isFiniteNum(v.x) && isFiniteNum(v.y) && isFiniteNum(v.z);
+
+function clampVec3InArena(v) {
+  return {
+    x: Math.max(-ARENA_HALF, Math.min(ARENA_HALF, v.x)),
+    y: Math.max(ARENA_MIN_Y, Math.min(ARENA_MAX_Y, v.y)),
+    z: Math.max(-ARENA_HALF, Math.min(ARENA_HALF, v.z)),
+  };
+}
+
+const maxDamageFor = (weapon) => WEAPON_MAX_DAMAGE[weapon] ?? DEFAULT_MAX_DAMAGE;
+
+// Per-socket token-bucket rate limiter. Returns false when the caller should drop
+// the event. `perSecond` is both the sustained rate and the burst size.
+function allowEvent(player, key, perSecond) {
+  if (!player) return false;
+  const now = Date.now();
+  if (!player._rate) player._rate = {};
+  const bucket = player._rate[key] || { tokens: perSecond, last: now };
+  const elapsed = (now - bucket.last) / 1000;
+  bucket.tokens = Math.min(perSecond, bucket.tokens + elapsed * perSecond);
+  bucket.last = now;
+  player._rate[key] = bucket;
+  if (bucket.tokens < 1) return false;
+  bucket.tokens -= 1;
+  return true;
+}
+
 // ============== Server-Authoritative YUKA Bot System ==============
 // Full YUKA AI running on server - preserves all 6 months of AI development!
 let serverBotManager = null;
@@ -580,20 +626,18 @@ io.on('connection', (socket) => {
     const player = connectedPlayers.get(socket.id);
     if (!player?.matchId) return;
 
-    // Debug: log first few updates per player
-    if (!player._updateCount) player._updateCount = 0;
-    player._updateCount++;
-    if (player._updateCount <= 3 || player._updateCount % 100 === 0) {
-      console.log(`📍 ${oderId} pos: (${data.position?.x?.toFixed(1)}, ${data.position?.y?.toFixed(1)}, ${data.position?.z?.toFixed(1)}) weapon: ${data.weapon || player.weapon || 'none'} [update #${player._updateCount}]`);
-    }
+    // Throttle and validate: ignore floods and reject non-finite positions.
+    if (!allowEvent(player, 'update', 40)) return;
+    if (!data || !isValidVec3(data.position)) return;
 
-    // Update player state
-    player.position = data.position;
-    player.rotation = data.rotation;
-    player.isSprinting = data.isSprinting;
-    player.isGrounded = data.isGrounded;
-    // Update weapon if provided in update
-    if (data.weapon) {
+    // Clamp position into the arena so a tampered client can't teleport out of bounds.
+    player.position = clampVec3InArena(data.position);
+    if (data.rotation && isFiniteNum(data.rotation.x) && isFiniteNum(data.rotation.y)) {
+      player.rotation = data.rotation;
+    }
+    player.isSprinting = !!data.isSprinting;
+    player.isGrounded = !!data.isGrounded;
+    if (typeof data.weapon === 'string') {
       player.weapon = data.weapon;
     }
 
@@ -601,21 +645,21 @@ io.on('connection', (socket) => {
     updatePlayerForBots({
       oderId: player.oderId,
       username: player.username,
-      position: data.position,
-      rotation: data.rotation,
+      position: player.position,
+      rotation: player.rotation,
       health: player.health,
       isAlive: player.isAlive
     });
 
-    // Broadcast to all OTHER players in the match (include weapon!)
+    // Broadcast the validated state to other players (velocity is unused by the
+    // receiver, so it's intentionally dropped to save bandwidth).
     socket.to(`match_${player.matchId}`).emit('player_update', {
       userId: oderId,
-      position: data.position,
-      rotation: data.rotation,
-      velocity: data.velocity,
-      isSprinting: data.isSprinting,
-      isGrounded: data.isGrounded,
-      weapon: player.weapon || data.weapon
+      position: player.position,
+      rotation: player.rotation,
+      isSprinting: player.isSprinting,
+      isGrounded: player.isGrounded,
+      weapon: player.weapon
     });
   });
 
@@ -682,12 +726,16 @@ io.on('connection', (socket) => {
     const player = connectedPlayers.get(socket.id);
     if (!player) return;
 
-    console.log(`💬 ${oderId}: ${data.message}`);
+    // Throttle, validate, length-cap and strip angle brackets to avoid HTML injection.
+    if (!allowEvent(player, 'chat', 3)) return;
+    if (!data || typeof data.message !== 'string') return;
+    const message = data.message.replace(/[<>]/g, '').slice(0, MAX_CHAT_LENGTH).trim();
+    if (!message) return;
 
     const chatPayload = {
       userId: oderId,
       username: player.username || `Player_${oderId.slice(0, 4)}`,
-      message: data.message
+      message: message
     };
 
     if (player.matchId) {
@@ -701,39 +749,35 @@ io.on('connection', (socket) => {
 
   socket.on('player_hit', (data) => {
     const player = connectedPlayers.get(socket.id);
-    if (!player?.matchId) return;
+    if (!player?.matchId || !data) return;
 
-    console.log(`💥 ${oderId} hit ${data.targetId} for ${data.damage} damage`);
+    // Anti-cheat: throttle, require a living attacker, and validate the damage.
+    if (!allowEvent(player, 'hit', 30)) return;
+    if (!player.isAlive) return; // a dead player can't deal damage
+    if (!isFiniteNum(data.damage) || data.damage <= 0) return;
 
-    // Find target player and update health
+    // Find target player
     let targetPlayer = null;
-    let targetSocketId = null;
-    for (const [sid, p] of connectedPlayers) {
+    for (const [, p] of connectedPlayers) {
       if (p.userId === data.targetId) {
         targetPlayer = p;
-        targetSocketId = sid;
         break;
       }
     }
 
-    if (targetPlayer) {
-      // CRITICAL FIX: Don't process hits on dead players!
-      if (!targetPlayer.isAlive) {
-        console.log(`[SERVER] ⚠️ Ignoring hit on dead player ${targetPlayer.userId} (isAlive=false)`);
-        return;
-      }
+    if (!targetPlayer || !targetPlayer.isAlive) return; // no target or already dead
+    if (targetPlayer === player) return;                // can't damage yourself here
+    // Friendly fire is decided server-side, not by the (untrusted) client.
+    if (player.team && targetPlayer.team && player.team === targetPlayer.team) return;
 
-      const oldHealth = targetPlayer.health;
-      targetPlayer.health = Math.max(0, targetPlayer.health - data.damage);
-      console.log(`[SERVER] 🎯 Player ${targetPlayer.userId} health: ${oldHealth} -> ${targetPlayer.health}`);
-    } else {
-      console.log(`[SERVER] ⚠️ Target player ${data.targetId} not found in connectedPlayers!`);
-    }
+    // Clamp damage to the maximum the attacker's current weapon can plausibly deal.
+    const damage = Math.min(data.damage, maxDamageFor(player.weapon));
+    targetPlayer.health = Math.max(0, targetPlayer.health - damage);
 
     io.to(`match_${player.matchId}`).emit('player_damaged', {
-      targetId: data.targetId,
+      targetId: targetPlayer.userId,
       attackerId: oderId,
-      damage: data.damage,
+      damage: damage,
       hitLocation: data.hitLocation
     });
 
@@ -748,7 +792,7 @@ io.on('connection', (socket) => {
       io.to(`match_${player.matchId}`).emit('player_killed', {
         victimId: targetPlayer.userId,
         attackerId: oderId,
-        weaponType: 'weapon' // Default handling
+        weaponType: player.weapon || 'weapon'
       });
 
       // Send score update
@@ -797,53 +841,42 @@ io.on('connection', (socket) => {
   // Handle player hitting a bot (server-authoritative bot damage)
   socket.on('bot_hit', (data) => {
     const player = connectedPlayers.get(socket.id);
-    if (!player?.matchId) return;
+    if (!player?.matchId || !data) return;
 
-    const { botId, damage } = data;
+    // Anti-cheat: throttle, require a living attacker, validate + clamp damage.
+    if (!allowEvent(player, 'hit', 30)) return;
+    if (!player.isAlive) return;
+    if (!isFiniteNum(data.damage) || data.damage <= 0) return;
+    if (typeof data.botId !== 'string') return;
 
-    console.log(`💥 ${oderId} hit bot ${botId} for ${damage} damage`);
+    const damage = Math.min(data.damage, maxDamageFor(player.weapon));
 
     // Use the new YUKA-based bot damage handler
-    handleBotDamage(botId, damage, player.oderId);
+    handleBotDamage(data.botId, damage, player.oderId);
   });
 
+  // A client reports its OWN death (e.g. killed by a server bot). This is only a
+  // death/killfeed hint — it must NOT award kills, otherwise a tampered client
+  // could inflate any player's score. Human-vs-human kills are scored
+  // authoritatively in 'player_hit'.
   socket.on('player_died', (data) => {
     const player = connectedPlayers.get(socket.id);
     if (!player?.matchId) return;
+    if (!player.isAlive) return; // already processed (avoids double-counting deaths)
+    if (!allowEvent(player, 'died', 2)) return;
 
     player.isAlive = false;
     player.deaths++;
 
-    // Find attacker and update their kills
-    for (const [sid, p] of connectedPlayers) {
-      if (p.userId === data.attackerId) {
-        p.kills++;
-        break;
-      }
-    }
-
-    console.log(`☠️ ${oderId} killed by ${data.attackerId}`);
-
+    // Cosmetic killfeed only; attackerId is not trusted for scoring.
     io.to(`match_${player.matchId}`).emit('player_killed', {
       victimId: oderId,
-      attackerId: data.attackerId,
-      weaponType: data.weaponType || 'unknown'
+      attackerId: typeof data?.attackerId === 'string' ? data.attackerId : 'unknown',
+      weaponType: typeof data?.weaponType === 'string' ? data.weaponType : 'unknown'
     });
 
-    // Send score update
+    // Broadcast the authoritative scoreboard (unchanged by this event).
     io.to(`match_${player.matchId}`).emit('score_update', getMatchState(player.matchId));
-
-    // Check for match end (25 kills)
-    const match = activeMatches.get(player.matchId);
-    if (match) {
-      const maxKills = Math.max(...Array.from(connectedPlayers.values())
-        .filter(p => p.matchId === player.matchId)
-        .map(p => p.kills));
-
-      if (maxKills >= 25) {
-        io.to(`match_${player.matchId}`).emit('match_ended', getMatchState(player.matchId));
-      }
-    }
   });
 
   socket.on('player_respawn', (data) => {

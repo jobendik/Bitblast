@@ -1,19 +1,19 @@
-import { World } from './World';
-import { CONFIG } from './Config';
+import World from './World';
+import { GameModeType } from '../gamemodes/IGameMode';
 
 /**
  * Manages squad-level coordination for bots.
  * In FFA, this system is largely inactive or treats every bot as a solo squad.
  */
 export class AICoordinationSystem {
-    private world: World;
+    private world: typeof World;
     private squads: Map<string, any[]> = new Map(); // TeamID -> Array of Bot Entities
 
     // Coordination Timers
     private timeSinceLastCommand: number = 0;
     private readonly COMMAND_INTERVAL = 3.0; // Seconds between tactical updates
 
-    constructor(world: World) {
+    constructor(world: typeof World) {
         this.world = world;
     }
 
@@ -42,7 +42,8 @@ export class AICoordinationSystem {
     update(dt: number) {
         // 1. Check Game Mode
         const currentMode = this.world.gameModeManager.getCurrentMode();
-        const isTeamMode = currentMode?.type === 'TDM' || currentMode?.type === 'CTF';
+        const modeType = currentMode?.getType();
+        const isTeamMode = modeType === GameModeType.TEAM_DEATHMATCH || modeType === GameModeType.CAPTURE_THE_FLAG;
 
         // 🛑 In FFA, we skip coordination logic
         if (!isTeamMode) return;

@@ -122,7 +122,7 @@ export class NetworkManager {
       this.setupListeners();
 
       // Emit join_match to ensure we're in the match room
-      this.socket.emit('join_match', matchId);
+      this.socket?.emit('join_match', matchId);
 
       return true;
     }
@@ -190,7 +190,9 @@ export class NetworkManager {
       console.error('[NetworkManager] ❌ Connection error:', error.message);
     });
 
-    this.socket.on('disconnect', (reason: string) => {
+    this.socket.on('disconnect', (reason: any) => {
+      // Socket.IO auto-reconnects; the 'connect' handler re-joins the match.
+      console.warn('[NetworkManager] Disconnected:', reason);
     });
 
     this.socket.on('player_joined', (data: unknown) => {
@@ -210,8 +212,6 @@ export class NetworkManager {
       }
     });
 
-    // Log first few player_update events
-    let updateLogCount = 0;
     this.socket.on('player_update', (data: unknown) => {
       const { userId, position, rotation, isSprinting, isGrounded, weapon } = data as {
         userId: string;
@@ -422,11 +422,13 @@ export class NetworkManager {
       // Extract assigned spawn position if present
       const stateWithSpawn = this.matchState as any;
       if (stateWithSpawn.yourSpawnPosition) {
-        this.assignedSpawnPosition = stateWithSpawn.yourSpawnPosition;
-        this.assignedSpawnRotation = stateWithSpawn.yourSpawnRotation || { x: 0, y: 0, z: 0 };
+        const spawnPos = stateWithSpawn.yourSpawnPosition;
+        const spawnRot = stateWithSpawn.yourSpawnRotation || { x: 0, y: 0, z: 0 };
+        this.assignedSpawnPosition = spawnPos;
+        this.assignedSpawnRotation = spawnRot;
 
         if (this.onSpawnAssignedCallback) {
-          this.onSpawnAssignedCallback(this.assignedSpawnPosition, this.assignedSpawnRotation);
+          this.onSpawnAssignedCallback(spawnPos, spawnRot);
         }
       }
 
@@ -571,11 +573,10 @@ export class NetworkManager {
 
     // Bot killed event
     this.socket.on('bot_killed', (data: unknown) => {
-      const { botId, botUsername, killerId, respawnTime } = data as {
+      const { botId, botUsername, killerId } = data as {
         botId: string;
         botUsername: string;
         killerId: string;
-        respawnTime: number;
       };
 
       // Resolve weapon from the KILLER
@@ -677,7 +678,6 @@ export class NetworkManager {
    * Update network state - call each frame
    */
   private updateCounter = 0;
-  private loggedNotConnected = false;
   public update(
     delta: number,
     localPlayer: { position: THREE.Vector3; rotation: THREE.Quaternion; velocity: THREE.Vector3; isSprinting: boolean; isGrounded: boolean },
@@ -982,23 +982,24 @@ export class NetworkManager {
 
   public disconnect(): void {
     if (this.socket) {
-      this.socket.off('connect');
-      this.socket.off('disconnect');
-      this.socket.off('player_joined');
-      this.socket.off('player_update');
-      this.socket.off('player_shoot');
-      this.socket.off('bullet_impact');
-      this.socket.off('player_reload');
-      this.socket.off('chat_message');
-      this.socket.off('player_left');
-      this.socket.off('player_damaged');
-      this.socket.off('player_killed');
-      this.socket.off('player_respawned');
-      this.socket.off('match_state');
-      this.socket.off('score_update');
-      this.socket.off('score_update');
-      this.socket.off('match_ended');
+      // Remove exactly the game listeners we registered (the socket is shared with
+      // the lobby, so we can't use removeAllListeners). Re-joining re-registers them.
+      const events = [
+        'connect', 'disconnect', 'connect_error',
+        'player_joined', 'player_update', 'player_shoot', 'bullet_impact',
+        'player_reload', 'chat_message', 'player_left', 'player_damaged',
+        'player_killed', 'player_respawned', 'match_state', 'score_update',
+        'match_ended', 'weapon_switch',
+        'bot_states', 'bot_attack', 'bot_hit_player', 'bot_killed', 'bot_respawned',
+      ];
+      for (const ev of events) this.socket.off(ev);
     }
+
+    // Dispose remote player visuals/audio before dropping references (prevents
+    // THREE/WebAudio leaks across matches).
+    this.remotePlayers.forEach((p) => {
+      try { p.destroy(); } catch { /* ignore */ }
+    });
     this.remotePlayers.clear();
     this.deadPlayers.clear();
   }

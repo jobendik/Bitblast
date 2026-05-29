@@ -86,7 +86,7 @@ export class PlayerCompetitor implements ICompetitor {
     return prevHealth - this.player.health;
   }
   
-  onDeath(killer: ICompetitor | null, weaponType?: string): void {
+  onDeath(killer: ICompetitor | null, _weaponType?: string): void {
     this.deaths++;
     
     if (killer && killer !== this) {
@@ -198,7 +198,7 @@ export class BotCompetitor implements ICompetitor {
     return prevHealth - this.bot.health;
   }
   
-  onDeath(killer: ICompetitor | null, weaponType?: string): void {
+  onDeath(killer: ICompetitor | null, _weaponType?: string): void {
     this.deaths++;
     
     if (killer && killer !== this) {

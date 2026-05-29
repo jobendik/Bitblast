@@ -23,9 +23,16 @@ export default [
       '@typescript-eslint': tseslint,
     },
     rules: {
+      // TypeScript already checks undefined symbols and unused declarations far more
+      // accurately than the base rules (which false-positive on types and ambient
+      // globals). Defer to the TS-aware equivalents.
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      'no-case-declarations': 'off',
+      'no-empty': ['warn', { allowEmptyCatch: true }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-console': 'off',
     },
   },

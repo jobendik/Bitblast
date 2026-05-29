@@ -776,7 +776,6 @@ class AssetManager {
 
 			// Now load all animation files
 			let loadedCount = 0;
-			const totalAnimations = amyAnimationFiles.length;
 
 			amyAnimationFiles.forEach((animFile) => {
 				this.fbxLoader.load(animFile.path, (animFbx) => {
@@ -843,7 +842,6 @@ class AssetManager {
 
 			// Now load all animation files
 			let loadedCount = 0;
-			const totalAnimations = grannyAnimationFiles.length;
 
 			grannyAnimationFiles.forEach((animFile) => {
 				this.fbxLoader.load(animFile.path, (animFbx) => {

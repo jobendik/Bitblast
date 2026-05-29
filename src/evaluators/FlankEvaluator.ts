@@ -36,8 +36,13 @@ class FlankEvaluator extends GoalEvaluator<Bot> {
     }
 
     setGoal(bot: Bot) {
+        const currentSubgoal = bot.brain.currentSubgoal();
+        if (currentSubgoal instanceof FlankGoal) return;
+
         const goal = new FlankGoal(bot);
         goal.priority = GOAL_PRIORITIES.TACTICAL;
+
+        bot.brain.clearSubgoals();
         bot.brain.addSubgoal(goal);
     }
 }

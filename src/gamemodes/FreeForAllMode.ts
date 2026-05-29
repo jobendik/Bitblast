@@ -55,6 +55,8 @@ const FFA_CONFIG: GameModeConfig = {
  */
 export class FreeForAllMode extends BaseGameMode {
   private leaderId: string | null = null;
+  private leaderboardTimer: number = 0;
+  private static readonly LEADERBOARD_INTERVAL = 0.25; // seconds between HUD rebuilds
 
   constructor(world: World, hudManager: HUDManager, customConfig?: Partial<GameModeConfig>) {
     super(world, hudManager, { ...FFA_CONFIG, ...customConfig });
@@ -94,11 +96,14 @@ export class FreeForAllMode extends BaseGameMode {
 
     if (!this.state.isRunning) return;
 
-    // Update leader tracking
-    this.updateLeader();
-
-    // Update leaderboard HUD
-    this.updateLeaderboardHUD();
+    // Throttle the (relatively expensive) leaderboard rebuild to a few times a
+    // second instead of every frame.
+    this.leaderboardTimer += delta;
+    if (this.leaderboardTimer >= FreeForAllMode.LEADERBOARD_INTERVAL) {
+      this.leaderboardTimer = 0;
+      this.updateLeader();
+      this.updateLeaderboardHUD();
+    }
   }
 
   /**

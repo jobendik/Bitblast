@@ -1,6 +1,6 @@
 // Game Mode Manager
 
-import { IGameMode, GameModeType } from './IGameMode';
+import { IGameMode, GameModeType, GameModeConfig } from './IGameMode';
 import { FreeForAllMode } from './FreeForAllMode';
 import { TeamDeathmatchMode } from './TeamDeathmatchMode';
 import { WaveSurvivalMode } from './WaveSurvivalMode';
@@ -57,37 +57,35 @@ export class GameModeManager {
   }
 
   private initializeModes(): void {
-    this.modes.set(
-      GameModeType.FREE_FOR_ALL,
-      new FreeForAllMode(this.world, this.hudManager)
-    );
+    this.modes.set(GameModeType.FREE_FOR_ALL, this.createMode(GameModeType.FREE_FOR_ALL));
+    this.modes.set(GameModeType.TEAM_DEATHMATCH, this.createMode(GameModeType.TEAM_DEATHMATCH));
+    this.modes.set(GameModeType.WAVE_SURVIVAL, this.createMode(GameModeType.WAVE_SURVIVAL));
+  }
 
-    this.modes.set(
-      GameModeType.TEAM_DEATHMATCH,
-      new TeamDeathmatchMode(this.world, this.hudManager)
-    );
-
-    this.modes.set(
-      GameModeType.WAVE_SURVIVAL,
-      new WaveSurvivalMode(this.world, this.hudManager)
-    );
+  private createMode(type: GameModeType, customConfig?: Partial<GameModeConfig>): IGameMode {
+    switch (type) {
+      case GameModeType.TEAM_DEATHMATCH:
+        return new TeamDeathmatchMode(this.world, this.hudManager, customConfig);
+      case GameModeType.WAVE_SURVIVAL:
+        return new WaveSurvivalMode(this.world, this.hudManager, customConfig);
+      case GameModeType.FREE_FOR_ALL:
+      default:
+        return new FreeForAllMode(this.world, this.hudManager, customConfig);
+    }
   }
 
   /**
-   * Set and start a game mode
+   * Set and start a game mode. Recreating the mode guarantees fresh per-match
+   * state and lets callers apply per-match config overrides (score/time limits).
    */
-  public setMode(type: GameModeType): void {
+  public setMode(type: GameModeType, customConfig?: Partial<GameModeConfig>): void {
     // Cleanup current mode if exists
     if (this.currentMode) {
       this.currentMode.cleanup();
     }
 
-    // Get new mode
-    const newMode = this.modes.get(type);
-    if (!newMode) {
-      console.error(`Game mode ${type} not found!`);
-      return;
-    }
+    const newMode = this.createMode(type, customConfig);
+    this.modes.set(type, newMode);
 
     this.currentMode = newMode;
     this.currentMode.init();

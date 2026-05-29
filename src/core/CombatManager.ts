@@ -186,11 +186,12 @@ export class CombatManager {
         world.networkManager.sendShoot(origin, direction, weaponType);
       }
 
-      // Track shot fired for statistics
-      if ((window as any).world?.gameModeManager?.currentMode) {
-        const weaponName = this.weaponSystem.currentWeapon.toString();
-        const playerId = (window as any).world.player.uuid;
-        (window as any).world.gameModeManager.currentMode.onShotFired(playerId, weaponName);
+      // Track shot fired for statistics (once per trigger pull).
+      const mode = world?.gameModeManager?.getCurrentMode?.();
+      const weaponName = this.weaponSystem.currentWeapon.toString();
+      const playerId = world?.player?.uuid;
+      if (mode && playerId) {
+        mode.onShotFired?.(playerId, weaponName);
       }
 
       // Apply screen effects
@@ -210,12 +211,23 @@ export class CombatManager {
       // Note: Muzzle flash and smoke are both handled by WeaponSystem sprites using muzzle.png and smoke.png
       // No need to spawn additional particles here
 
-      // Process each shot (shotguns have multiple)
+      // Process each shot (shotguns fire multiple pellets). Aggregate hits so a
+      // single trigger pull counts as at most one "hit" for accuracy stats.
       const directions = result.directions || [result.direction];
 
+      let anyHit = false;
+      let totalDamage = 0;
       directions.forEach((dir: THREE.Vector3) => {
-        this.processShot(dir, obstacles);
+        const shot = this.processShot(dir, obstacles);
+        if (shot.hit) {
+          anyHit = true;
+          totalDamage += shot.damage;
+        }
       });
+
+      if (anyHit && mode && playerId) {
+        mode.onShotHit?.(playerId, weaponName, totalDamage);
+      }
 
       // Update HUD
       this.updateHUD(false, playerIsSprinting, false); // Approximate state for immediate feedback
@@ -316,7 +328,6 @@ export class CombatManager {
         this.particleSystem.spawnBlood(hit.point);
 
         if (hasEntityRef) {
-          // console.log(`[CombatManager] 🤖 AI Bullet Hit ENTITY: ${entity.name || 'Unknown'} at`, hit.point);
           // Calculate damage with falloff
           let damage = weaponConfig.damage;
 
@@ -336,13 +347,20 @@ export class CombatManager {
             }
           }
 
+          // Symmetric headshots: if the enemy round struck a head hitbox, apply
+          // the weapon's headshot multiplier (previously only the player could headshot).
+          const isHeadshot = hitObject?.userData?.isHead === true;
+          if (isHeadshot && typeof weaponConfig.headshotMultiplier === 'number') {
+            damage *= weaponConfig.headshotMultiplier;
+          }
+
           const telegram = {
             message: MESSAGE_HIT,
             data: {
               damage: damage,
               direction: direction,
-              // Enemies don't have a weapon name prop usually, so hardcode or infer
-              weapon: 'EnemyWeapon'
+              isHeadshot: isHeadshot,
+              weapon: weaponConfig.name || 'EnemyWeapon'
             },
             sender: shooter
           };
@@ -364,8 +382,13 @@ export class CombatManager {
     this.tracerSystem.createTracer(muzzlePosition, endPoint);
   }
 
-  private processShot(direction: THREE.Vector3, obstacles: THREE.Object3D[]): void {
+  private processShot(direction: THREE.Vector3, obstacles: THREE.Object3D[]): { hit: boolean; damage: number } {
     const muzzlePos = this.weaponSystem.getMuzzleWorldPosition();
+
+    // Whether this pellet actually damaged an entity (for per-trigger-pull accuracy).
+    let didHitEntity = false;
+    let appliedDamage = 0;
+    let hitFaceNormal: THREE.Vector3 | null = null;
 
     // Raycast from camera
     const rayOrigin = new THREE.Vector3();
@@ -413,9 +436,6 @@ export class CombatManager {
           break; // Blocked by wall
         }
 
-        // DEBUG: Print what we hit
-        console.log(`[CombatManager] Hit: ${hitCandidate.object.name}, Entity: ${candidateEntity?.name}, isHead: ${hitCandidate.object.userData.isHead}`);
-
         // If we found a valid entity
         if (candidateEntity && typeof candidateEntity.health === 'number') {
           // If this is the FIRST entity we've seen, valid!
@@ -427,10 +447,8 @@ export class CombatManager {
           // If this hit belongs to the SAME entity we successfully hit
           if (candidateEntity === finalEntity) {
             // Check if this specific intersection is a Head Hitbox
-            // console.log(`[CombatManager] Checking isHead on ${hitCandidate.object.name}: ${hitCandidate.object.userData.isHead}`);
             if (hitCandidate.object.userData.isHead) {
               isHeadshot = true;
-              console.log('[CombatManager] 🎯 HEADSHOT CONFIRMED (Penetration Logic) on', candidateEntity.name);
               break; // We found the head, upgrade to headshot and stop
             }
           } else {
@@ -465,18 +483,19 @@ export class CombatManager {
         }
       }
 
-      // Apply headshot multiplier
-      damage = isHeadshot ? 1000 : damage; // Instant kill on headshot (1000 damage)
-
-      // Track shot hit for statistics
-      if ((window as any).world?.gameModeManager?.currentMode) {
-        const weaponName = this.weaponSystem.currentWeapon.toString();
-        const playerId = (window as any).world.player.uuid;
-        (window as any).world.gameModeManager.currentMode.onShotHit(playerId, weaponName, damage);
+      // Apply per-weapon headshot multiplier (was a hardcoded 1000 instant-kill,
+      // which made every weapon a one-shot and polluted damage stats).
+      if (isHeadshot) {
+        damage *= config.headshotMultiplier;
       }
+
+      // Remember the surface normal so we don't have to re-raycast for the network.
+      hitFaceNormal = hit.face?.normal ? hit.face.normal.clone() : null;
 
       // Apply damage via message system
       if (entity && entity.handleMessage) {
+        didHitEntity = true;
+        appliedDamage = damage;
         const telegram = {
           message: MESSAGE_HIT,
           data: {
@@ -558,7 +577,6 @@ export class CombatManager {
       this.particleSystem.spawnImpactEffect(hit.point, isHeadshot);
     } else {
       // Miss - extend to max range
-      console.log('[CombatManager] Raycast missed EVERYTHING (length 0). Checking range/direction?');
       endPoint = this.camera.position.clone().add(direction.multiplyScalar(100));
     }
 
@@ -568,9 +586,8 @@ export class CombatManager {
     // Send bullet impact to network for other players to see tracer/decals/particles
     const world = (window as any).world;
     if (world?.networkManager?.isConnected()) {
-      const hitNormal = hitObject ?
-        (this.raycaster.intersectObject(hitObject, true)[0]?.face?.normal || new THREE.Vector3(0, 1, 0))
-        : new THREE.Vector3(0, 1, 0);
+      // Reuse the normal captured during the original raycast (don't re-raycast).
+      const hitNormal = hitFaceNormal || new THREE.Vector3(0, 1, 0);
 
       // Determine if hit was on an entity
       let wasEntityHit = false;
@@ -604,6 +621,8 @@ export class CombatManager {
         wasEntityHit
       );
     }
+
+    return { hit: didHitEntity, damage: appliedDamage };
   }
 
   /**

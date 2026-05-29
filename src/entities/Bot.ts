@@ -110,6 +110,11 @@ class Bot extends Vehicle {
 	public tookDamageRecently: boolean = false;
 	public damageTime: number = 0;
 
+	// Combat-movement state (consumed by CombatTacticsSystem)
+	public inCombat: boolean = false;
+	public isCrouching: boolean = false;
+	public spawnProtectedUntil: number = 0; // currentTime until which damage is ignored
+
 	/**
 	 * Serialization for network sync
 	 */
@@ -266,7 +271,6 @@ class Bot extends Vehicle {
 		// debug
 
 		this.pathHelper = null;
-		this.pathHelper = null;
 		this.hitboxHelper = null;
 
 		// Initialize Advanced Systems
@@ -287,7 +291,6 @@ class Bot extends Vehicle {
 	private _initHeadHitbox(): void {
 		if (!this.renderComponent) return;
 
-		console.log(`[Bot] Setting up Head Hitbox for ${this.uuid}...`);
 		let headBone: Object3D | null = null;
 
 		this.renderComponent.traverse((child) => {
@@ -298,23 +301,21 @@ class Bot extends Vehicle {
 				const name = child.name.toLowerCase();
 				if (name.includes('head') && !name.includes('top') && !name.includes('end')) {
 					headBone = child;
-					console.log(`[Bot] FOUND HEAD BONE: ${child.name}`);
 				}
 			}
 		});
 
 		if (headBone) {
-			// Create hitbox (approx 30cm x 30cm x 30cm in WORLD space)
-			// Model scale is 0.02, so we need 0.30 / 0.02 = 15.0
-			// 0.34m world size
+			// Head hitbox sized in model space (model scale ~0.02 -> ~0.34m world).
 			const geometry = new BoxGeometry(17.0, 17.0, 17.0);
 
-			// Invisible material - DEBUG: Visible for now
+			// Invisible but still raycastable (used for headshot detection).
 			const material = new MeshBasicMaterial({
 				color: 0xff0000,
 				transparent: true,
-				opacity: 0, // HIDDEN (was 0.5)
+				opacity: 0,
 				depthWrite: false,
+				visible: false,
 				side: DoubleSide
 			});
 
@@ -325,16 +326,12 @@ class Bot extends Vehicle {
 			hitbox.userData.isHead = true;
 			hitbox.userData.entity = this; // Link back to this Bot
 
-			// Offset (5.0 local units = 0.1 world units) -> Reduced to 1.5
+			// Offset so the box sits over the head.
 			hitbox.position.y = 1.5;
 
 			(headBone as Object3D).add(hitbox);
-			console.log(`[Bot] Head hitbox SUCCESSFULLY attached to ${(headBone as any).name}`);
-		} else {
-			console.warn('[Bot] No Head bone found for hitbox! Dumping bones to console:');
-			this.renderComponent.traverse((c) => {
-				if ((c as any).isBone) console.log(`[Bot] ${c.name} (${c.type})`);
-			});
+		} else if (this.world.debug) {
+			console.warn('[Bot] No head bone found for hitbox.');
 		}
 	}
 
@@ -344,8 +341,6 @@ class Bot extends Vehicle {
 	* @return {Enemy} A reference to this game entity.
 	*/
 	start() {
-		console.error(`[Bot] ${this.uuid} START() CALLED`);
-
 		const run = this.animations.get('forward');
 		if (run) run.enabled = true;
 
@@ -465,6 +460,9 @@ class Bot extends Vehicle {
 				const isMoving = this.getSpeed() > 0.1;
 				this.visualWeaponSystem.update(delta, { x: 0, y: 0 }, false, isMoving, false, this.currentTime);
 			}
+
+			// Maintain combat state so tactical movement only runs while engaging.
+			this.inCombat = this.targetSystem.hasTarget() && this.targetSystem.isTargetShootable();
 
 			// Update Tactics
 			this.combatTacticsSystem.update(delta);
@@ -1296,8 +1294,23 @@ class Bot extends Vehicle {
 					return true;
 				}
 
+				// Ignore damage during spawn protection.
+				if (this.currentTime < this.spawnProtectedUntil) {
+					return true;
+				}
+
 				// reduce health (clamp to 0 minimum)
 				this.health = Math.max(0, this.health - telegram.data.damage);
+
+				// React to incoming fire: throw off aim and trigger an evasive maneuver.
+				this.tookDamageRecently = true;
+				this.damageTime = this.currentTime;
+				if (this.weaponSystem?.humanAim) {
+					this.weaponSystem.humanAim.takeDamage(telegram.data.damage);
+				}
+				if (this.combatTacticsSystem) {
+					this.combatTacticsSystem.onDamageTaken();
+				}
 
 				// logging
 
@@ -1311,10 +1324,12 @@ class Bot extends Vehicle {
 
 				if (this.health <= 0 && this.status === STATUS_ALIVE) {
 
-					this.initDeath();					// Track kill for game mode statistics
+					this.initDeath();
+
+					// Track kill for game mode statistics
 					const killMode = this.world.gameModeManager?.getCurrentMode();
 					if (killMode && telegram.sender) {
-						const killerId = telegram.sender.isPlayer ? telegram.sender.uuid : telegram.sender.uuid;
+						const killerId = telegram.sender.uuid;
 						const victimId = this.uuid;
 						const weapon = telegram.data.weapon || 'Unknown';
 						const isHeadshot = telegram.data.isHeadshot || false;

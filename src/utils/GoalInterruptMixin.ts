@@ -1,8 +1,6 @@
-import { Goal } from 'yuka';
-
 /*
- * Mixin to add interruption capabilities to Goals.
- * Allows higher priority goals to interrupt currently running ones.
+ * Priority levels used by goal evaluators to tag the goals they create. Higher
+ * values represent more urgent goals (survival > combat > tactical > explore).
  */
 
 export const GOAL_PRIORITIES = {
@@ -14,38 +12,3 @@ export const GOAL_PRIORITIES = {
     EXPLORE: 10,            // Wandering
     IDLE: 0
 };
-
-export function applyGoalInterruptMixin(goal: any) {
-
-    // Default priority
-    goal.priority = goal.priority || GOAL_PRIORITIES.EXPLORE;
-
-    /**
-     * Checks if this goal can be interrupted by a candidate goal
-     */
-    goal.canInterrupt = function (): boolean {
-        // Some goals might be uninterruptible (e.g. jumping gap)
-        if (this.atomic && this.active) return false;
-        return true;
-    };
-
-    /**
-     * Determines if we SHOULD interrupt for the new goal
-     */
-    goal.shouldInterruptFor = function (newGoal: any): boolean {
-        if (!this.canInterrupt()) return false;
-
-        const newPriority = newGoal.priority || 0;
-        const currentPriority = this.priority;
-
-        // Gap required to switch (prevent flickering)
-        const HYSTERESIS = 5;
-
-        // If new goal is strictly higher priority (plus hysteresis)
-        if (newPriority > currentPriority + HYSTERESIS) {
-            return true;
-        }
-
-        return false;
-    };
-}

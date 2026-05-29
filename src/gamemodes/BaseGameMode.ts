@@ -94,11 +94,12 @@ export abstract class BaseGameMode implements IGameMode {
 
     // Update time if time-limited
     if (this.config.timeLimit && this.config.timeLimit > 0) {
-      this.state.timeRemaining -= delta;
+      this.state.timeRemaining = Math.max(0, this.state.timeRemaining - delta);
       this.updateTimer();
 
       if (this.state.timeRemaining <= 0) {
         this.onTimeUp();
+        return; // game over this frame; don't also trigger the score-limit end
       }
     }
 
@@ -129,6 +130,21 @@ export abstract class BaseGameMode implements IGameMode {
     weapon: string,
     headshot: boolean
   ): void {
+    // Suicide / environmental death: count the death, never award a kill.
+    if (!killerId || killerId === victimId) {
+      const selfScore = this.getOrCreateScore(victimId);
+      selfScore.deaths++;
+      selfScore.suicides = (selfScore.suicides ?? 0) + 1;
+      selfScore.currentKillStreak = 0;
+      selfScore.currentLifeDamage = 0;
+      selfScore.livesLived++;
+      this.state.scores.set(victimId, selfScore);
+      if (this.config.respawnTime && this.config.respawnTime > 0) {
+        setTimeout(() => this.respawnPlayer(victimId), this.config.respawnTime * 1000);
+      }
+      return;
+    }
+
     const killerScore = this.getOrCreateScore(killerId);
     const victimScore = this.getOrCreateScore(victimId);
 
@@ -223,7 +239,7 @@ export abstract class BaseGameMode implements IGameMode {
     attackerId: string,
     weapon: string,
     damage: number,
-    distance: number = 0,
+    _distance: number = 0,
     targetInfo: { isHeadshot: boolean; isKill: boolean; targetId?: string } = { isHeadshot: false, isKill: false }
   ): void {
     // Safety check just in case
@@ -582,6 +598,11 @@ export abstract class BaseGameMode implements IGameMode {
   }
 
   protected endGame(_reason: string): void {
+    // Idempotent: the timer and score-limit checks can both resolve on the same
+    // frame, and network/local death paths can overlap. Only end once.
+    if (!this.state.isRunning) {
+      return;
+    }
     this.state.isRunning = false;
     this.isActive = false;
     this.determineWinner(); // Called for side effects

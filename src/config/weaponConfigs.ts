@@ -43,6 +43,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
   [WeaponType.AK47]: {
     name: 'AK-47',
     damage: 14, // 7-8 shot kill (High TTK)
+    headshotMultiplier: 2.5, // ~3 headshots to kill
     fireRate: 10, // 600 RPM
     magSize: 30,
     reserveAmmo: 90,
@@ -51,7 +52,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
     falloff: {
       startDistance: 30,
       endDistance: 60,
-      minDamage: 22 // Still effective at range
+      minDamage: 10 // Reduced damage at long range (falloff, not buff)
     },
     audio: {
       fire: BASE_AUDIO_PATH + 'AK47-Fire.mp3',
@@ -90,6 +91,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
   [WeaponType.AWP]: {
     name: 'AWP',
     damage: 105, // One shot kill to body (High Power) -- KEPT
+    headshotMultiplier: 1.5, // Already lethal to body; headshot guarantees it
     fireRate: 0.65, // Reduced from 0.8 (40 RPM)
     magSize: 10,
     reserveAmmo: 30,
@@ -138,6 +140,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
   [WeaponType.LMG]: {
     name: 'LMG',
     damage: 13, // 8 shot kill
+    headshotMultiplier: 2.2,
     fireRate: 11.6, // ~700 RPM
     magSize: 100,
     reserveAmmo: 200,
@@ -180,6 +183,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
   [WeaponType.M4]: {
     name: 'M4',
     damage: 12, // 8-9 shot kill
+    headshotMultiplier: 2.5,
     fireRate: 12.5, // 750 RPM
     magSize: 30,
     reserveAmmo: 90,
@@ -222,6 +226,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
   [WeaponType.Pistol]: {
     name: 'Pistol',
     damage: 11, // 9-10 shot kill
+    headshotMultiplier: 2.5, // rewards precision on the weak sidearm
     fireRate: 8,
     magSize: 12,
     reserveAmmo: 48,
@@ -264,6 +269,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
   [WeaponType.Scar]: {
     name: 'SCAR',
     damage: 16, // 6-7 shot kill
+    headshotMultiplier: 2.5,
     fireRate: 7.5, // 450 RPM
     magSize: 20,
     reserveAmmo: 60,
@@ -307,6 +313,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
   [WeaponType.Shotgun]: {
     name: 'Shotgun',
     damage: 8, // 8x8 = 64 max damage (2 solid pumps to kill)
+    headshotMultiplier: 1.5, // per-pellet; devastating point-blank
     fireRate: 1.5,
     magSize: 8,
     reserveAmmo: 32,
@@ -355,7 +362,8 @@ export const WEAPON_CONFIG: WeaponConfig = {
 
   [WeaponType.Sniper]: {
     name: 'Sniper Rifle',
-    damage: 85, // 2 shot body kill (15 HP left), Headshot still kills (170)
+    damage: 85, // 2 shot body kill; headshot one-shots (170)
+    headshotMultiplier: 2.0,
     fireRate: 1.0,
     magSize: 5,
     reserveAmmo: 20,
@@ -400,6 +408,7 @@ export const WEAPON_CONFIG: WeaponConfig = {
   [WeaponType.Tec9]: {
     name: 'Tec-9',
     damage: 10, // 10 shot kill
+    headshotMultiplier: 2.0,
     fireRate: 14,
     magSize: 24,
     reserveAmmo: 72,

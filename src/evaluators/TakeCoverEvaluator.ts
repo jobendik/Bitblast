@@ -35,14 +35,15 @@ class TakeCoverEvaluator extends GoalEvaluator<Bot> {
     }
 
     setGoal(bot: Bot) {
-        const currentGoal = bot.brain.currentGoal;
-        const goal = new SeekCoverGoal(bot);
+        const currentSubgoal = bot.brain.currentSubgoal();
+        if (currentSubgoal instanceof SeekCoverGoal) return;
 
-        // Priority logic for Interrupt System
+        const goal = new SeekCoverGoal(bot);
         goal.priority = (bot.health / bot.maxHealth < 0.3)
             ? GOAL_PRIORITIES.CRITICAL_SURVIVAL
             : GOAL_PRIORITIES.COMBAT;
 
+        bot.brain.clearSubgoals();
         bot.brain.addSubgoal(goal);
     }
 }
