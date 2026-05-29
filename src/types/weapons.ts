@@ -93,6 +93,8 @@ export interface WeaponAudioConfig {
 export interface SingleWeaponConfig {
   name: string;
   damage: number;
+  /** Headshot damage multiplier (applied to the falloff-adjusted body damage). */
+  headshotMultiplier: number;
   fireRate: number;
   magSize: number;
   reserveAmmo: number;

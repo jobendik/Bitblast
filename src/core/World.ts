@@ -18,6 +18,7 @@ import { Bullet } from '../weapons/Bullet';
 import { PathPlanner } from '../utils/PathPlanner';
 import { Sky } from '../effects/Sky';
 import { CONFIG } from './Config';
+import { CAMERA_CONFIG } from '../config/gameConfig';
 import { Points } from 'three';
 
 // Combat and game systems
@@ -78,13 +79,19 @@ class World {
 	// Mobile support
 	public isMobile: boolean = MobileControls.isMobileDevice();
 
-	// Zoom animation state
-	private targetFOV: number = 75;
-	private currentFOV: number = 75;
-	private readonly baseFOV: number = 75;
+	// FOV / zoom / sprint animation state. The World owns camera.fov; ScreenEffects
+	// contributes only an additive punch offset so nothing fights over the FOV.
+	private currentFOV: number = CAMERA_CONFIG.baseFOV;
+	private readonly baseFOV: number = CAMERA_CONFIG.baseFOV;
 	private readonly zoomedFOV: number = 15;
-	private readonly fovLerpSpeed: number = 12; // Higher = faster transition
+	private readonly sprintFOV: number = CAMERA_CONFIG.sprintFOV;
+	private readonly fovLerpSpeed: number = CAMERA_CONFIG.fovLerpSpeed; // Higher = faster transition
+	private isZoomActive: boolean = false;
 	public zoomTransitionProgress: number = 0;
+
+	// Camera recoil is applied as a per-frame delta so it fully recovers to centre.
+	private lastRecoilPitch: number = 0;
+	private lastRecoilYaw: number = 0;
 
 	// Convenience getter for HUD Manager
 	public get hudManager() {
@@ -238,8 +245,6 @@ class World {
 	* This prevents flickering caused by runtime shader compilation or texture upload.
 	*/
 	private _precompileShaders(): void {
-		const startTime = performance.now();
-
 		try {
 			// Force upload ALL textures to GPU first
 			this._forceTextureUpload();
@@ -261,8 +266,6 @@ class World {
 					this.postProcessing.render();
 				}
 			}
-
-			const elapsed = performance.now() - startTime;
 		} catch (err) {
 			console.error('❌ Shader pre-compilation failed:', err);
 			// Continue anyway - game should still work
@@ -831,7 +834,7 @@ class World {
 
 
 		// Handle bot attack events (visual effects)
-		this.networkManager.onBotAttack((botId: string, targetId: string, damage: number) => {
+		this.networkManager.onBotAttack((botId: string, targetId: string, _damage: number) => {
 			const bot = this.remoteBots.get(botId);
 			if (bot) {
 				// Try to find target to aim at
@@ -1223,12 +1226,12 @@ class World {
 		// BITBLAST FPS FIX: Bind network manager callbacks to player
 		if (this.networkManager) {
 			// Handle incoming damage to local player
-			this.networkManager.onDamage((targetId, attackerId, damage) => {
+			this.networkManager.onDamage((_targetId, _attackerId, damage) => {
 				player.takeDamage(damage);
 			});
 
 			// Handle local death confirmation from server
-			this.networkManager.onLocalDeath((attackerId, weaponType) => {
+			this.networkManager.onLocalDeath((_attackerId, _weaponType) => {
 				player.initDeath();
 			});
 
@@ -1467,8 +1470,8 @@ class World {
 
 		// Setup zoom callback for sniper scope overlay
 		this.combat.weaponSystem.setZoomCallback((isZoomed) => {
-			// Set target FOV for smooth interpolation
-			this.targetFOV = isZoomed ? this.zoomedFOV : this.baseFOV;
+			// Drive the FOV target via a flag; sprint/zoom/punch are combined in _updateCombat.
+			this.isZoomActive = isZoomed;
 
 			// Toggle HUD sniper scope overlay (CSS handles fade animation)
 			this.combat.hudManager.toggleScope(isZoomed);
@@ -1511,7 +1514,7 @@ class World {
 	*/
 	private _setupLobbyEvents(): void {
 		// Handle match found
-		this.lobbyManager.on(LobbyEventType.MATCH_FOUND, (data) => {
+		this.lobbyManager.on(LobbyEventType.MATCH_FOUND, () => {
 		});
 
 		// Handle match starting
@@ -1533,22 +1536,8 @@ class World {
 		});
 
 		// Handle queue updates
-		this.lobbyManager.on(LobbyEventType.QUEUE_UPDATE, (status) => {
+		this.lobbyManager.on(LobbyEventType.QUEUE_UPDATE, () => {
 		});
-	}
-
-	/**
-	* Starts a multiplayer game with the specified mode.
-	*/
-	private _startMultiplayerGame(modeId: string): void {
-		const modeMap: { [key: string]: GameModeType } = {
-			'ffa': GameModeType.FREE_FOR_ALL,
-			'tdm': GameModeType.TEAM_DEATHMATCH,
-			'wave': GameModeType.WAVE_SURVIVAL
-		};
-
-		const gameMode = modeMap[modeId] || GameModeType.FREE_FOR_ALL;
-		this.gameModeManager.setMode(gameMode);
 	}
 
 	/**
@@ -1713,16 +1702,6 @@ class World {
 	private _updateCombat(delta: number): void {
 		if (!this.combat) return;
 
-		// Smooth FOV interpolation for zoom animation
-		if (Math.abs(this.currentFOV - this.targetFOV) > 0.01) {
-			this.currentFOV += (this.targetFOV - this.currentFOV) * Math.min(1, delta * this.fovLerpSpeed);
-			this.camera.fov = this.currentFOV;
-			this.camera.updateProjectionMatrix();
-
-			// Track zoom progress for other effects (0 = unzoomed, 1 = zoomed)
-			this.zoomTransitionProgress = 1 - (this.currentFOV - this.zoomedFOV) / (this.baseFOV - this.zoomedFOV);
-		}
-
 		// Track head bob time for weapon animation
 		const speed = this.player?.velocity ?
 			Math.sqrt(this.player.velocity.x ** 2 + this.player.velocity.z ** 2) : 0;
@@ -1749,15 +1728,32 @@ class World {
 			isAirborne = !this.player.onGround;
 		}
 
+		// Smooth FOV: zoom takes priority, then a sprint kick, otherwise base. The
+		// ScreenEffects firing punch is added on top as an offset so they don't fight.
+		let targetFOV = this.baseFOV;
+		if (this.isZoomActive) {
+			targetFOV = this.zoomedFOV;
+		} else if (isSprinting && isMoving && !isAirborne) {
+			targetFOV = this.sprintFOV;
+		}
+		this.currentFOV += (targetFOV - this.currentFOV) * Math.min(1, delta * this.fovLerpSpeed);
+		this.camera.fov = this.currentFOV + this.combat.screenEffects.getFOVOffset();
+		this.camera.updateProjectionMatrix();
+		this.zoomTransitionProgress = 1 - (this.currentFOV - this.zoomedFOV) / (this.baseFOV - this.zoomedFOV);
+
 		// Update all visual systems (particles, decals, tracers, weapon system, HUD)
 		this.combat.update(delta, this.mouseMovement, isSprinting, isMoving, isAirborne, this.headBobTime);
 
-		// Apply camera recoil to player's head rotation
+		// Apply camera recoil as a per-frame delta so it kicks up and then fully
+		// recovers back to centre (previously it accumulated and never recovered).
 		const recoil = this.combat.getCameraRecoil();
-		if (this.fpsControls && (Math.abs(recoil.pitch) > 0.0001 || Math.abs(recoil.yaw) > 0.0001)) {
-			// Apply recoil to the controls' movement values
-			this.fpsControls.movementY -= recoil.pitch * delta * 0.5;
-			this.fpsControls.movementX -= recoil.yaw * delta * 0.5;
+		const dPitch = recoil.pitch - this.lastRecoilPitch;
+		const dYaw = recoil.yaw - this.lastRecoilYaw;
+		this.lastRecoilPitch = recoil.pitch;
+		this.lastRecoilYaw = recoil.yaw;
+		if (this.fpsControls && (Math.abs(dPitch) > 1e-6 || Math.abs(dYaw) > 1e-6)) {
+			this.fpsControls.movementY -= dPitch;
+			this.fpsControls.movementX -= dYaw;
 
 			// Clamp pitch
 			const PI05 = Math.PI / 2;
@@ -1999,14 +1995,6 @@ class World {
 function sync(entity: any, renderComponent: any) {
 
 	renderComponent.matrix.copy(entity.worldMatrix);
-
-}
-
-function syncWithScale(entity: any, renderComponent: any, scale: number) {
-
-	// Copy entity matrix and apply scale
-	renderComponent.matrix.copy(entity.worldMatrix);
-	renderComponent.matrix.scale({ x: scale, y: scale, z: scale } as any);
 
 }
 

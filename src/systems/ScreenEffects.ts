@@ -32,8 +32,10 @@ export class ScreenEffects {
   private shakeInstances: ShakeInstance[] = [];
   private shakeOffset: THREE.Vector3 = new THREE.Vector3();
 
-  // FOV punch state
+  // FOV punch state. The punch is exposed as an additive offset via
+  // getFOVOffset() so the World owns camera.fov and zoom/sprint FOV don't fight it.
   private fovPunch: FOVPunch | null = null;
+  private fovPunchOffset: number = 0;
 
   // Camera recoil state (applies to camera rotation)
   private recoilPitch: number = 0; // Up/down (Y rotation after euler decomposition)
@@ -230,25 +232,31 @@ export class ScreenEffects {
   }
 
   private updateFOVPunch(delta: number): void {
-    if (!this.fovPunch) return;
+    if (!this.fovPunch) {
+      this.fovPunchOffset = 0;
+      return;
+    }
 
     this.fovPunch.elapsed += delta;
 
     if (this.fovPunch.elapsed >= this.fovPunch.duration) {
-      // Reset FOV
-      this.camera.fov = this.baseFOV;
-      this.camera.updateProjectionMatrix();
+      this.fovPunchOffset = 0;
       this.fovPunch = null;
       return;
     }
 
-    // Ease out FOV punch
+    // Ease out FOV punch — stored as an offset, applied by the World on top of
+    // the current (zoom/sprint-aware) base FOV.
     const progress = this.fovPunch.elapsed / this.fovPunch.duration;
     const eased = 1 - Math.pow(progress, 2);
-    const currentPunch = this.fovPunch.amount * eased;
+    this.fovPunchOffset = this.fovPunch.amount * eased;
+  }
 
-    this.camera.fov = this.baseFOV + currentPunch;
-    this.camera.updateProjectionMatrix();
+  /**
+   * Current additive FOV punch offset in degrees (0 when inactive).
+   */
+  public getFOVOffset(): number {
+    return this.fovPunchOffset;
   }
 
   private updateRecoil(delta: number): void {
@@ -375,6 +383,7 @@ export class ScreenEffects {
     this.shakeInstances = [];
     this.shakeOffset.set(0, 0, 0);
     this.fovPunch = null;
+    this.fovPunchOffset = 0;
     this.recoilPitch = 0;
     this.recoilYaw = 0;
     this.targetRecoilPitch = 0;

@@ -41,9 +41,7 @@ export class PlayerWeaponSystem {
   private weaponStates: Map<WeaponType, WeaponState> = new Map();
   public isZoomed: boolean = false;
 
-  // Recoil & Spread
-  private currentRecoil: { x: number; y: number } = { x: 0, y: 0 };
-  private targetRecoil: { x: number; y: number } = { x: 0, y: 0 };
+  // Spread (camera recoil is owned by ScreenEffects/World, not here)
   private currentSpread: number = 0;
 
   // Weapon Animation
@@ -342,8 +340,6 @@ export class PlayerWeaponSystem {
       this.setZoom(false);
     }
 
-    const oldWeapon = this.currentWeapon;
-
     if (typeof weapon === 'number') {
       const weapons = this.getEquippedWeapons();
       if (weapon >= 0 && weapon < weapons.length) {
@@ -517,12 +513,10 @@ export class PlayerWeaponSystem {
       this.shellEjectCallback(ejectionPos, ejectionDir);
     }
 
-    // Calculate shot direction(s)
+    // Calculate shot direction(s). Bullets fire along the camera (crosshair); the
+    // recoil "kick" is applied to the camera itself by the World, so it both moves
+    // the view and the shots, then recovers — no separate bullet-only recoil.
     const baseDir = camera.getWorldDirection(new THREE.Vector3());
-
-    // Apply recoil to direction
-    const euler = new THREE.Euler(this.currentRecoil.y, this.currentRecoil.x, 0, 'YXZ');
-    baseDir.applyEuler(euler);
 
     if (config.pelletCount && config.pelletCount > 1) {
       // Shotgun spread
@@ -552,12 +546,8 @@ export class PlayerWeaponSystem {
     direction.normalize();
   }
 
-  private applyRecoil(recoilConfig: { pitchAmount: number; yawAmount: number; kickZ: number; kickRotX: number }): void {
-    // Camera recoil
-    this.targetRecoil.x += (Math.random() - 0.5) * recoilConfig.yawAmount;
-    this.targetRecoil.y += recoilConfig.pitchAmount;
-
-    // Weapon visual kick from config
+  private applyRecoil(recoilConfig: { kickZ: number; kickRotX: number }): void {
+    // Weapon visual kick from config (the camera/aim kick is handled by ScreenEffects).
     this.weaponKickZ = recoilConfig.kickZ;
     this.weaponKickRotX = (recoilConfig.kickRotX * Math.PI) / 180; // Convert degrees to radians
   }
@@ -820,13 +810,6 @@ export class PlayerWeaponSystem {
         state.isReloading = false;
       }
     }
-
-    // Recoil recovery
-    this.currentRecoil.x = THREE.MathUtils.lerp(this.currentRecoil.x, this.targetRecoil.x, deltaTime * 10);
-    this.currentRecoil.y = THREE.MathUtils.lerp(this.currentRecoil.y, this.targetRecoil.y, deltaTime * 10);
-
-    this.targetRecoil.x = THREE.MathUtils.lerp(this.targetRecoil.x, 0, deltaTime * config.recoil.recoveryRate);
-    this.targetRecoil.y = THREE.MathUtils.lerp(this.targetRecoil.y, 0, deltaTime * config.recoil.recoveryRate);
 
     // Spread recovery
     let minSpread = config.spread.base;

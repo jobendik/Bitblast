@@ -316,7 +316,6 @@ export class CombatManager {
         this.particleSystem.spawnBlood(hit.point);
 
         if (hasEntityRef) {
-          // console.log(`[CombatManager] 🤖 AI Bullet Hit ENTITY: ${entity.name || 'Unknown'} at`, hit.point);
           // Calculate damage with falloff
           let damage = weaponConfig.damage;
 
@@ -336,13 +335,20 @@ export class CombatManager {
             }
           }
 
+          // Symmetric headshots: if the enemy round struck a head hitbox, apply
+          // the weapon's headshot multiplier (previously only the player could headshot).
+          const isHeadshot = hitObject?.userData?.isHead === true;
+          if (isHeadshot && typeof weaponConfig.headshotMultiplier === 'number') {
+            damage *= weaponConfig.headshotMultiplier;
+          }
+
           const telegram = {
             message: MESSAGE_HIT,
             data: {
               damage: damage,
               direction: direction,
-              // Enemies don't have a weapon name prop usually, so hardcode or infer
-              weapon: 'EnemyWeapon'
+              isHeadshot: isHeadshot,
+              weapon: weaponConfig.name || 'EnemyWeapon'
             },
             sender: shooter
           };
@@ -465,8 +471,11 @@ export class CombatManager {
         }
       }
 
-      // Apply headshot multiplier
-      damage = isHeadshot ? 1000 : damage; // Instant kill on headshot (1000 damage)
+      // Apply per-weapon headshot multiplier (was a hardcoded 1000 instant-kill,
+      // which made every weapon a one-shot and polluted damage stats).
+      if (isHeadshot) {
+        damage *= config.headshotMultiplier;
+      }
 
       // Track shot hit for statistics
       if ((window as any).world?.gameModeManager?.currentMode) {

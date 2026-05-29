@@ -1,6 +1,7 @@
 import { EventDispatcher, Vector3, Logger } from 'yuka';
 import { WEAPON_TYPES_BLASTER, WEAPON_TYPES_SHOTGUN, WEAPON_TYPES_ASSAULT_RIFLE } from '../core/Constants';
 import { CONFIG } from '../core/Config';
+import { CAMERA_CONFIG } from '../config/gameConfig';
 import { Player } from '../entities/Player';
 import { MobileControls } from './MobileControls';
 import { WeaponType } from '../types/weapons';
@@ -23,6 +24,7 @@ class FirstPersonControls extends EventDispatcher {
 	public movementX: number;
 	public movementY: number;
 	public lookingSpeed: number;
+	public sensitivity: number; // radians of view rotation per pixel of mouse movement
 	public brakingPower: number;
 	public headMovement: number;
 	public weaponMovement: number;
@@ -64,6 +66,7 @@ class FirstPersonControls extends EventDispatcher {
 		this.movementY = 0; // mouse up/down
 
 		this.lookingSpeed = CONFIG.CONTROLS.LOOKING_SPEED;
+		this.sensitivity = CAMERA_CONFIG.mouseSensitivity;
 		this.brakingPower = CONFIG.CONTROLS.BRAKING_POWER;
 		this.headMovement = CONFIG.CONTROLS.HEAD_MOVEMENT;
 		this.weaponMovement = CONFIG.CONTROLS.WEAPON_MOVEMENT;
@@ -142,7 +145,8 @@ class FirstPersonControls extends EventDispatcher {
 		document.addEventListener('contextmenu', this._contextMenuHandler, false);
 
 		// Request pointer lock - may not be granted immediately if not from user gesture
-		document.body.requestPointerLock().catch(err => {
+		document.body.requestPointerLock().catch(() => {
+			/* pointer lock will be requested again on the next user click */
 		});
 
 		return this;
@@ -526,8 +530,8 @@ function onMouseMove(this: FirstPersonControls, event: any) {
 			sensitivityMultiplier = 0.3; // 30% sensitivity when scoped
 		}
 
-		this.movementX -= event.movementX * 0.001 * this.lookingSpeed * sensitivityMultiplier;
-		this.movementY -= event.movementY * 0.001 * this.lookingSpeed * sensitivityMultiplier;
+		this.movementX -= event.movementX * this.sensitivity * sensitivityMultiplier;
+		this.movementY -= event.movementY * this.sensitivity * sensitivityMultiplier;
 
 		this.movementY = Math.max(- PI05, Math.min(PI05, this.movementY));
 

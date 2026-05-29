@@ -841,8 +841,9 @@ class Player extends MovingEntity {
 
 		// Use visual weapon system if available
 		if (world.combat && world.combat.weaponSystem) {
-			const onGround = this.velocity.y === 0;
-			const isSprinting = Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2) > 10;
+			// Use the authoritative physics state, not re-derived heuristics.
+			const onGround = this.onGround;
+			const isSprinting = this.isSprinting;
 			const velocity = new ThreeVector3(this.velocity.x, this.velocity.y, this.velocity.z);
 
 			// Build obstacle list: level geometry + enemy render components
