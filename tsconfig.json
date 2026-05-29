@@ -13,12 +13,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
-		"allowSyntheticDefaultImports": true,
-		"baseUrl": ".",
-		"paths": {
-			"@/*": ["src/*"]
-		},
-		"types": ["vite/client"]
+		"allowSyntheticDefaultImports": true
 	},
 	"include": [
 		"src/**/*"

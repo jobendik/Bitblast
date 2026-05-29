@@ -616,8 +616,9 @@ class World {
 			precision: this.isMobile ? 'mediump' : 'highp'
 		});
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
-		// Cap pixel ratio on mobile to save battery and performance
-		this.renderer.setPixelRatio(this.isMobile ? Math.min(window.devicePixelRatio, 1.5) : window.devicePixelRatio);
+		// Cap pixel ratio to avoid rendering at 4-9x cost on high-DPI displays
+		// (mobile is capped tighter to save battery).
+		this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isMobile ? 1.5 : 2));
 		this.renderer.autoClear = false;
 		this.renderer.shadowMap.enabled = true;
 		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;

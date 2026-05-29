@@ -960,8 +960,23 @@ export class PlayerWeaponSystem {
 
   private resetWeaponState(): void {
     // Remove old model
-    if (this.weaponMesh && this.weaponMesh.parent) {
-      this.weaponMesh.parent.remove(this.weaponMesh);
+    if (this.weaponMesh) {
+      if (this.weaponMesh.parent) {
+        this.weaponMesh.parent.remove(this.weaponMesh);
+      }
+      // Procedural models create fresh geometry/materials each switch, so dispose
+      // them. GLB clones share geometry/materials with the cached asset (must NOT
+      // be disposed). Reused sprites (smoke/muzzle) are not Meshes, so they're safe.
+      if (!this.weaponMesh.userData.isOBJModel) {
+        this.weaponMesh.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.geometry?.dispose();
+            const mat = child.material as THREE.Material | THREE.Material[];
+            if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
+            else if (mat) mat.dispose();
+          }
+        });
+      }
     }
 
     // Create new model
