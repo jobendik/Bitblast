@@ -212,7 +212,7 @@ export class WaveSurvivalMode extends BaseGameMode {
     // Heal player slightly between waves as a survival reward.
     const healAmount = Math.min(25, this.world.player.maxHealth - this.world.player.health);
     if (healAmount > 0) {
-      this.world.player.addHealth(healAmount);
+      (this.world.player as any).addHealth(healAmount);
     }
   }
 

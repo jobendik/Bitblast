@@ -10,7 +10,7 @@ export class KillfeedManager {
         }
     }
 
-    public addKill(killer: string, victim: string, weapon: string, isHeadshot: boolean, isMultiKill: boolean = false, killerTeam: string = '', victimTeam: string = ''): void {
+    public addKill(killer: string, victim: string, weapon: string, isHeadshot: boolean, isMultiKill: boolean = false, killerTeam: string = '', _victimTeam: string = ''): void {
         if (!this.container) return;
 
         // Use requestAnimationFrame to defer DOM manipulation

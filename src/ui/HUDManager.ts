@@ -31,7 +31,6 @@ export class HUDManager {
   private headShotStat: HTMLElement;
   private hitMarker: HTMLElement;
   private leaderboard: HTMLElement;
-  private chatContainer: HTMLElement;
   private chatFeed: HTMLElement;
   private chatInput: HTMLInputElement;
 
@@ -95,7 +94,6 @@ export class HUDManager {
     this.headShotStat = document.getElementById('stat-hs')!;
     this.hitMarker = document.getElementById('hit-marker')!;
     this.leaderboard = document.getElementById('leaderboard')!;
-    this.chatContainer = document.getElementById('chat-container')!;
     this.chatFeed = document.getElementById('chat-feed')!;
     this.chatInput = document.getElementById('game-chat-input') as HTMLInputElement;
 

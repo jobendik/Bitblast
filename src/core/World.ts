@@ -668,6 +668,11 @@ class World {
 		if (matchBotSpawns && matchBotSpawns.length > 0) {
 			this.isMultiplayerMode = true;
 
+			// Dispose any remote bots left over from a previous match (prevents
+			// THREE/audio leaks when starting another match in the same session).
+			this.remoteBots.forEach((b: any) => { try { b.dispose(); } catch { /* ignore */ } });
+			this.remoteBots.clear();
+
 			for (const botData of matchBotSpawns) {
 				const remoteBot = new RemoteBot(
 					this.scene,

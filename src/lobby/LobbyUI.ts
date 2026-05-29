@@ -255,44 +255,6 @@ export class LobbyUI {
   }
 
   /**
-   * Show match found popup
-   */
-  private showMatchFoundPopup(match: MatchFoundData): void {
-    this.hideQueueStatus();
-    
-    this.matchFoundPopup = this.container?.querySelector('#match-found-popup') as HTMLElement;
-    if (!this.matchFoundPopup) return;
-
-    // Show popup
-    this.matchFoundPopup.classList.remove('hidden');
-
-    // Update info
-    const infoEl = this.matchFoundPopup.querySelector('#match-info');
-    const mode = this.lobbyManager.getGameMode(match.modeId);
-    if (infoEl && mode) {
-      infoEl.textContent = mode.name;
-    }
-
-    // Start countdown timer
-    let timeLeft = 10;
-    const timerEl = this.matchFoundPopup.querySelector('#match-timer');
-    
-    const countdown = setInterval(() => {
-      timeLeft--;
-      if (timerEl) timerEl.textContent = timeLeft.toString();
-      
-      if (timeLeft <= 0) {
-        clearInterval(countdown);
-        // Auto-decline if time runs out
-        this.lobbyManager.declineMatch();
-      }
-    }, 1000);
-
-    // Store timer reference for cleanup
-    (this.matchFoundPopup as { _countdown?: ReturnType<typeof setInterval> })._countdown = countdown;
-  }
-
-  /**
    * Hide match found popup
    */
   private hideMatchFoundPopup(): void {

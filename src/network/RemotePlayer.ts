@@ -57,7 +57,6 @@ export class RemotePlayer {
 
   // Shooting animation tracking
   private isShooting: boolean = false;
-  private shootAnimEndTime: number = 0;
 
   // Weapon system for third-person weapon display
   private weaponSystem: PlayerWeaponSystem | null = null;
@@ -173,7 +172,6 @@ export class RemotePlayer {
   private setupHeadHitbox(): void {
     if (!this.model) return;
 
-    console.log(`[RemotePlayer] Setting up Head Hitbox for ${this.id}...`);
     let headBone: THREE.Object3D | null = null;
     this.model.traverse((child: THREE.Object3D) => {
       // Prevent overwriting if we already found a "good" head bone
@@ -192,12 +190,13 @@ export class RemotePlayer {
       // Model scale is 0.02, so we need 0.30 / 0.02 = 15.0
       // Increased to 15.0 to ensure it's slightly larger than the visual mesh (hit priority)
       const geometry = new THREE.BoxGeometry(15.0, 15.0, 15.0);
-      // Invisible material
+      // Invisible hitbox (raycastable but not rendered).
       const material = new THREE.MeshBasicMaterial({
         color: 0xff0000,
         transparent: true,
-        opacity: 0.5, // DEBUG VISIBLE
-        depthWrite: false
+        opacity: 0,
+        depthWrite: false,
+        visible: false
       });
 
       const hitbox = new THREE.Mesh(geometry, material);
@@ -211,11 +210,8 @@ export class RemotePlayer {
       hitbox.position.y = 1.5;
 
       (headBone as THREE.Object3D).add(hitbox);
-      console.log(`[RemotePlayer] Head hitbox SUCCESSFULLY attached to ${headBone.name}`);
-      console.log('[RemotePlayer] Hitbox UserData:', hitbox.userData);
     } else {
-      console.error('[RemotePlayer] CRITICAL: No Head bone found for hitbox! Dumping all names:');
-      this.model.traverse((c) => console.log(`- ${c.name} (${c.type})`));
+      console.warn('[RemotePlayer] No head bone found for hitbox.');
     }
   }
 
@@ -317,7 +313,6 @@ export class RemotePlayer {
       // Set shooting flag to prevent idle/forward from overriding
       this.isShooting = true;
       const duration = shootAction.getClip().duration;
-      this.shootAnimEndTime = performance.now() + (duration * 1000 * 0.6);
 
       // Fade out current action and play shoot
       if (this.activeAction && this.activeAction !== shootAction) {
@@ -630,7 +625,6 @@ export class RemotePlayer {
   }
 
   public takeDamage(damage: number): void {
-    const oldHealth = this.health;
     this.health = Math.max(0, this.health - damage);
 
     if (this.nameLabelSprite && this.nameLabelSprite.visible) {
@@ -716,9 +710,6 @@ export class RemotePlayer {
   }
 
   public respawn(position?: THREE.Vector3 | YukaVector3): void {
-    const oldHealth = this.health;
-    const wasAlreadyDead = this.isDead;
-
     // Force stop all animations immediately
     this.stopAllAnimations();
 
@@ -759,10 +750,36 @@ export class RemotePlayer {
 
   public destroy(): void {
     this.scene.remove(this.mesh);
-    // Cleanup mixer
-    if (this.mixer) this.mixer.stopAllAction();
-    if (this.nameLabelSprite) {
-      (this.nameLabelSprite.material as THREE.Material).dispose();
+
+    // Stop animations and release the mixer's cache for this model.
+    if (this.mixer) {
+      this.mixer.stopAllAction();
+      try { this.mixer.uncacheRoot(this.mesh as any); } catch { /* ignore */ }
     }
+
+    // Stop and release cloned positional audio nodes.
+    this.audios.forEach((audio: any) => {
+      try { if (audio.isPlaying) audio.stop(); } catch { /* ignore */ }
+    });
+    this.audios.clear();
+
+    // Dispose every geometry/material in the model (and the head hitbox).
+    this.mesh.traverse((child: THREE.Object3D) => {
+      const m = child as THREE.Mesh;
+      if (m.geometry) m.geometry.dispose();
+      const mat = (m as any).material;
+      if (Array.isArray(mat)) mat.forEach((mm: THREE.Material) => mm.dispose());
+      else if (mat) (mat as THREE.Material).dispose();
+    });
+
+    // Dispose the name-label texture + material.
+    if (this.nameLabelSprite) {
+      const spriteMat = this.nameLabelSprite.material as THREE.SpriteMaterial;
+      if (spriteMat.map) spriteMat.map.dispose();
+      spriteMat.dispose();
+      this.nameLabelSprite = null;
+    }
+
+    this.weaponSystem = null;
   }
 }

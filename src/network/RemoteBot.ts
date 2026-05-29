@@ -553,9 +553,7 @@ export class RemoteBot {
    */
   public handleMessage(telegram: any): boolean {
     if (telegram.message === 'HIT' || telegram.message === 1) { // MESSAGE_HIT = 1
-      const damage = telegram.data?.damage || 0;
-
-      // Play hit sound for immediate feedback
+      // Bot damage is server-authoritative; here we only play local hit feedback.
       const impactNum = Math.floor(Math.random() * 7) + 1;
       const impactSound = this.audios.get(`impact${impactNum}`);
       if (impactSound && !impactSound.isPlaying) {
