@@ -37,7 +37,7 @@ lobby.init((matchInfo) => {
 				'ctf': 'FREE_FOR_ALL', // CTF maps to FFA for now
 			};
 			const gameMode = gameModeMap[selectedMode.modeId] || 'FREE_FOR_ALL';
-			world.gameModeManager.setMode(gameMode as import('./gamemodes/GameModeManager').GameModeType);
+			world.gameModeManager.setMode(gameMode as import('./gamemodes/IGameMode').GameModeType);
 		}
 
 		// Connect NetworkManager to the match - REUSE THE LOBBY SOCKET!

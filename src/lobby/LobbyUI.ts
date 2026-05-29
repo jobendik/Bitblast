@@ -289,7 +289,7 @@ export class LobbyUI {
     }, 1000);
 
     // Store timer reference for cleanup
-    (this.matchFoundPopup as { _countdown?: number })._countdown = countdown;
+    (this.matchFoundPopup as { _countdown?: ReturnType<typeof setInterval> })._countdown = countdown;
   }
 
   /**

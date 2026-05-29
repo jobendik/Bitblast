@@ -27,6 +27,9 @@ export class RemotePlayer {
   public set name(value: string) { this.username = value; }
   public get position(): THREE.Vector3 { return this.mesh.position; }
 
+  /** Returns the root group for this remote player (used by adapters/raycasting). */
+  public getMesh(): THREE.Group { return this.mesh; }
+
   // Health property for CombatManager detection
   public health: number = PLAYER_CONFIG.maxHealth;
   public maxHealth: number = PLAYER_CONFIG.maxHealth;

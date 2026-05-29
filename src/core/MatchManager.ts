@@ -2,6 +2,7 @@
 // Coordinates the flow from lobby matchmaking to game initialization
 // Handles spawning the right mix of players, bots, and remote players
 
+import * as THREE from 'three';
 import { LobbyManager } from '../lobby/LobbyManager';
 import { NetworkManager } from '../network/NetworkManager';
 import { LobbyEventType, MatchFoundData } from '../lobby/types';
@@ -70,7 +71,7 @@ export class MatchManager {
     });
 
     // Match starting - all players accepted
-    this.lobbyManager.on(LobbyEventType.MATCH_STARTING, (data) => {
+    this.lobbyManager.on(LobbyEventType.MATCH_STARTING, () => {
       if (this.pendingMatchConfig) {
         this.startMatch(this.pendingMatchConfig);
       }

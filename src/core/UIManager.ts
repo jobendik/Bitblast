@@ -1,9 +1,6 @@
-import { OrthographicCamera, Scene, Sprite, SpriteMaterial } from 'three';
+import { OrthographicCamera, Scene } from 'three';
 import { CONFIG } from './Config.js';
 import * as DAT from 'dat.gui';
-
-const PI25 = Math.PI * 0.25;
-const PI75 = Math.PI * 0.75;
 
 /**
 * Used to manage the state of the user interface.
@@ -12,14 +9,14 @@ const PI75 = Math.PI * 0.75;
 class UIManager {
 
 	public world: any;
-	public currentTime: number;
-	public hitIndicationTime: number;
-	public endTimeHitIndication: number;
-	public damageIndicationTime: number;
-	public endTimeDamageIndicationFront: number;
-	public endTimeDamageIndicationRight: number;
-	public endTimeDamageIndicationLeft: number;
-	public endTimeDamageIndicationBack: number;
+	public currentTime: number = 0;
+	public hitIndicationTime: number = 0;
+	public endTimeHitIndication: number = Infinity;
+	public damageIndicationTime: number = 0;
+	public endTimeDamageIndicationFront: number = Infinity;
+	public endTimeDamageIndicationRight: number = Infinity;
+	public endTimeDamageIndicationLeft: number = Infinity;
+	public endTimeDamageIndicationBack: number = Infinity;
 	public fragMessages: Array<any>;
 	public html: any;
 	public sprites: any;

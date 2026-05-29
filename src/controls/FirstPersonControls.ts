@@ -388,7 +388,7 @@ class FirstPersonControls extends EventDispatcher {
 
 			// Send weapon switch over network
 			const networkManager = this.owner.world.networkManager;
-			if (networkManager?.isConnected) {
+			if (networkManager?.isConnected()) {
 				const weaponName = this.owner.world.combat.weaponSystem.currentWeapon;
 				networkManager.sendWeaponSwitch(weaponName);
 			}
@@ -714,7 +714,7 @@ function onWheel(this: FirstPersonControls, event: WheelEvent) {
 
 		// Send weapon switch over network
 		const networkManager = this.owner.world.networkManager;
-		if (networkManager && networkManager.isConnected) {
+		if (networkManager && networkManager.isConnected()) {
 			const weaponName = this.owner.world.combat.weaponSystem.currentWeapon;
 			networkManager.sendWeaponSwitch(weaponName);
 		}

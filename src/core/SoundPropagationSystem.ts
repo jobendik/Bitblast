@@ -1,6 +1,5 @@
-import { Vector3, MathUtils } from 'yuka';
-import { World } from './World';
-import { CONFIG } from './Config';
+import { Vector3 } from 'yuka';
+import World from './World';
 
 export interface SoundEvent {
     position: Vector3;
@@ -15,10 +14,9 @@ export interface SoundEvent {
  * Simulates sound travel, attenuation, and perception.
  */
 class SoundPropagationSystem {
-    private world: World;
-    private events: SoundEvent[] = [];
+    private world: typeof World;
 
-    constructor(world: World) {
+    constructor(world: typeof World) {
         this.world = world;
     }
 
@@ -35,7 +33,7 @@ class SoundPropagationSystem {
      * Propagate sound to all listeners (Bots)
      */
     private _processSound(event: SoundEvent) {
-        const bots = this.world.entityManager.entities.filter(e => (e as any).isBot); // simplified check
+        const bots = this.world.entityManager.entities.filter((e: any) => e.isBot);
 
         for (const entity of bots) {
             const bot = entity as any;
@@ -67,8 +65,8 @@ class SoundPropagationSystem {
         }
     }
 
-    update(dt: number) {
-        // Process queued events if we moved to a queue system
+    update(_dt: number) {
+        // Sounds are processed immediately on emit; no per-frame work needed yet.
     }
 }
 

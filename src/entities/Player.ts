@@ -5,6 +5,7 @@ import { CONFIG } from '../core/Config';
 import { PLAYER_CONFIG } from '../config/gameConfig';
 import { Projectile } from '../weapons/Projectile';
 import { STATUS_ALIVE, WEAPON_TYPES_BLASTER, WEAPON_TYPES_SHOTGUN, WEAPON_TYPES_ASSAULT_RIFLE, MESSAGE_HIT, MESSAGE_DEAD, STATUS_DYING, STATUS_DEAD } from '../core/Constants';
+import { WeaponType } from '../types/weapons';
 import World from '../core/World';
 
 const intersectionPoint = new Vector3();
@@ -941,7 +942,13 @@ class Player extends MovingEntity {
 			const weaponIndex = weaponMap[type] !== undefined ? weaponMap[type] : 0;
 			this.world.combat.weaponSystem.switchWeapon(weaponIndex);
 		} else {
-			this.weaponSystem.setNextWeapon(type);
+			// Legacy fallback: map numeric weapon type to a WeaponType string.
+			const legacyMap: { [key: number]: WeaponType } = {
+				[WEAPON_TYPES_BLASTER]: WeaponType.Pistol,
+				[WEAPON_TYPES_SHOTGUN]: WeaponType.Shotgun,
+				[WEAPON_TYPES_ASSAULT_RIFLE]: WeaponType.AK47,
+			};
+			this.weaponSystem.setNextWeapon(legacyMap[type] ?? WeaponType.AK47);
 		}
 
 		return this;
