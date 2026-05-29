@@ -58,6 +58,7 @@ export class WaveSurvivalMode extends BaseGameMode {
   private enemiesRemaining: number = 0;
   private waveStartTime: number = 0;
   private timeBetweenWaves: number = 5000; // 5 seconds
+  private lastCountdownShown: number = -1; // last "next wave in N" second displayed
 
   constructor(world: World, hudManager: HUDManager, customConfig?: Partial<GameModeConfig>) {
     super(world, hudManager, { ...WAVE_CONFIG, ...customConfig });
@@ -121,9 +122,12 @@ export class WaveSurvivalMode extends BaseGameMode {
       if (elapsed >= this.timeBetweenWaves) {
         this.startNextWave();
       } else {
-        // Update countdown
+        // Update countdown only when the displayed second changes (was every frame).
         const remaining = Math.ceil((this.timeBetweenWaves - elapsed) / 1000);
-        this.hudManager.showMessage(`Next wave in ${remaining}...`, 1000);
+        if (remaining !== this.lastCountdownShown) {
+          this.lastCountdownShown = remaining;
+          this.hudManager.showMessage(`Next wave in ${remaining}...`, 1000);
+        }
       }
     }
 
@@ -192,6 +196,7 @@ export class WaveSurvivalMode extends BaseGameMode {
     this.waveInProgress = false;
     this.betweenWaves = true;
     this.waveStartTime = Date.now();
+    this.lastCountdownShown = -1;
 
     // Award wave completion bonus
     const playerScore = this.state.scores.get(this.world.player.uuid);
@@ -204,11 +209,10 @@ export class WaveSurvivalMode extends BaseGameMode {
     this.hudManager.showMessage(`WAVE ${this.state.wave} COMPLETE!\n+${this.state.wave * 500} BONUS`, 3000);
     this.updateScoreDisplay();
 
-    // Heal player slightly between waves
+    // Heal player slightly between waves as a survival reward.
     const healAmount = Math.min(25, this.world.player.maxHealth - this.world.player.health);
     if (healAmount > 0) {
-      // This would need to be implemented in the Player class
-      // this.world.player.heal(healAmount);
+      this.world.player.addHealth(healAmount);
     }
   }
 

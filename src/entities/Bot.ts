@@ -113,6 +113,7 @@ class Bot extends Vehicle {
 	// Combat-movement state (consumed by CombatTacticsSystem)
 	public inCombat: boolean = false;
 	public isCrouching: boolean = false;
+	public spawnProtectedUntil: number = 0; // currentTime until which damage is ignored
 
 	/**
 	 * Serialization for network sync
@@ -1299,6 +1300,11 @@ class Bot extends Vehicle {
 
 				// Ignore damage if already dead or dying
 				if (this.status !== STATUS_ALIVE) {
+					return true;
+				}
+
+				// Ignore damage during spawn protection.
+				if (this.currentTime < this.spawnProtectedUntil) {
 					return true;
 				}
 

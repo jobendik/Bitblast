@@ -3,9 +3,12 @@ import * as THREE from 'three';
 import { HealthPack } from '../entities/HealthPack.js';
 import { ItemGiver } from '../triggers/ItemGiver.js';
 import { SceneUtils } from '../utils/SceneUtils.js';
-import { HEALTH_PACK, WEAPON_TYPES_ASSAULT_RIFLE, WEAPON_TYPES_BLASTER, WEAPON_TYPES_SHOTGUN } from './Constants.js';
+import { HEALTH_PACK, WEAPON_TYPES_ASSAULT_RIFLE, WEAPON_TYPES_BLASTER, WEAPON_TYPES_SHOTGUN, STATUS_ALIVE } from './Constants.js';
 import { WeaponItem } from '../entities/WeaponItem.js';
 import { CONFIG } from './Config.js';
+
+// Seconds of invulnerability granted immediately after (re)spawning.
+const SPAWN_PROTECTION_TIME = 2.0;
 
 /**
 * This class is responsible for (re)spawning enemies.
@@ -165,6 +168,10 @@ class SpawningManager {
 			competitor.previousPosition.copy(competitor.position);
 		}
 
+		// Brief spawn protection so a freshly respawned entity can't be instantly
+		// re-killed by a spawn camper. Checked in each entity's damage handler.
+		competitor.spawnProtectedUntil = (competitor.currentTime || 0) + SPAWN_PROTECTION_TIME;
+
 		return this;
 
 	}
@@ -198,61 +205,48 @@ class SpawningManager {
 			}
 		}
 
-		let maxDistance = - Infinity;
-		let bestSpawningPoint = null;
-
-		// searching for the spawning point furthest away from all entities
+		// Score each spawn point by distance to the nearest *living* entity, then
+		// pick randomly among the few best so respawns aren't perfectly predictable
+		// (and so two entities don't deterministically pick the same point).
+		const scored: Array<{ point: any; dist: number }> = [];
 
 		for (let i = 0, il = spawningPoints.length; i < il; i++) {
 
 			const spawningPoint = spawningPoints[i];
-
 			let closestDistance = Infinity;
 
 			for (let j = 0, jl = allEntities.length; j < jl; j++) {
 
 				const entity = allEntities[j];
 
-				if (entity !== enemy && entity.position) {
+				if (entity === enemy || !entity.position) continue;
+				// Don't avoid corpses: ignore dead/dying entities.
+				if (entity.status !== undefined && entity.status !== STATUS_ALIVE) continue;
 
-					// Handle both Yuka Vector3 (squaredDistanceTo) and THREE.Vector3 (distanceToSquared)
-					let distance: number;
-					const entityPos = entity.position;
-					if (typeof spawningPoint.position.squaredDistanceTo === 'function') {
-						// Yuka Vector3 - convert THREE.Vector3 if needed
-						if (typeof entityPos.x === 'number') {
-							distance = spawningPoint.position.squaredDistanceTo({ x: entityPos.x, y: entityPos.y, z: entityPos.z });
-						} else {
-							distance = spawningPoint.position.squaredDistanceTo(entityPos);
-						}
-					} else {
-						// Fallback
-						const dx = spawningPoint.position.x - entityPos.x;
-						const dy = spawningPoint.position.y - entityPos.y;
-						const dz = spawningPoint.position.z - entityPos.z;
-						distance = dx * dx + dy * dy + dz * dz;
-					}
-
-					if (distance < closestDistance) {
-
-						closestDistance = distance;
-
-					}
-
+				const entityPos = entity.position;
+				let distance: number;
+				if (typeof spawningPoint.position.squaredDistanceTo === 'function') {
+					distance = spawningPoint.position.squaredDistanceTo({ x: entityPos.x, y: entityPos.y, z: entityPos.z });
+				} else {
+					const dx = spawningPoint.position.x - entityPos.x;
+					const dy = spawningPoint.position.y - entityPos.y;
+					const dz = spawningPoint.position.z - entityPos.z;
+					distance = dx * dx + dy * dy + dz * dz;
 				}
 
-			}
-
-			if (closestDistance > maxDistance) {
-
-				maxDistance = closestDistance;
-				bestSpawningPoint = spawningPoint;
+				if (distance < closestDistance) closestDistance = distance;
 
 			}
+
+			scored.push({ point: spawningPoint, dist: closestDistance });
 
 		}
 
-		return bestSpawningPoint;
+		if (scored.length === 0) return spawningPoints[0];
+
+		scored.sort((a, b) => b.dist - a.dist);
+		const topN = Math.min(3, scored.length);
+		return scored[Math.floor(Math.random() * topN)].point;
 
 	}
 

@@ -72,6 +72,7 @@ class Player extends MovingEntity {
 	public stamina: number = 100;
 	public landingImpact: number = 0;
 	public headBobTime: number = 0;
+	public spawnProtectedUntil: number = 0; // currentTime until which damage is ignored
 
 	// Audio state
 	public lastFootstepTime: number = 0;
@@ -778,6 +779,11 @@ class Player extends MovingEntity {
 			return;
 		}
 
+		// Ignore damage during spawn protection.
+		if (this.currentTime < this.spawnProtectedUntil) {
+			return;
+		}
+
 		try {
 			this.health = Math.max(0, this.health - damage);
 
@@ -1157,6 +1163,11 @@ class Player extends MovingEntity {
 
 				// Ignore damage if already dead or dying
 				if (this.status !== STATUS_ALIVE) {
+					return true;
+				}
+
+				// Ignore damage during spawn protection.
+				if (this.currentTime < this.spawnProtectedUntil) {
 					return true;
 				}
 
